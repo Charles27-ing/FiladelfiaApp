@@ -1,0 +1,66 @@
+---
+// src/layouts/Layout.astro
+
+// Definimos las "props" que este layout puede recibir.
+// En este caso, esperamos un título para la página.
+import type { Session } from "@supabase/supabase-js";
+interface Props {
+	title: string;
+	session: Session | null;
+}
+
+const { title, session } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="description" content="Aplicación de gestión para la iglesia Filadelfia" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title}</title> {/* Usamos el título que recibimos */}
+	</head>
+	<body class="bg-gray-50 text-gray-800">
+		<header class="bg-white shadow-md">
+			<nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+				<!-- Logo/Título de la App -->
+				<a href="/" class="text-2xl font-bold text-cyan-600 hover:text-cyan-700">App Filadelfia</a>
+				
+				<!-- 2. NAVEGACIÓN DINÁMICA -->
+				<div class="flex items-center gap-4">
+				  {session ? (
+					<>
+					  <span class="text-sm text-gray-600">
+						Bienvenido, <span class="font-semibold">{session.user.email}</span>
+					  </span>
+					  <!-- Botón de Cerrar Sesión (aún no funcional) -->
+					  <a href="#" id="logout-btn" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors text-sm">
+						Cerrar Sesión
+					  </a>
+					</>
+				  ) : (
+					<a href="/login" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm">
+					  Iniciar Sesión
+					</a>
+				  )}
+				</div>
+			  </nav>
+		</header>
+
+		<main class="container mx-auto p-6">
+			<!-- Aquí es donde se insertará el contenido de cada página -->
+			<slot />
+		</main>
+
+		<footer class="text-center p-4 mt-8 text-sm text-gray-500">
+			&copy; {new Date().getFullYear()} Iglesia Filadelfia Rabolargo. Todos los derechos reservados.
+		</footer>
+
+		<script>
+			import { initializeLayout } from "@/scripts/layouts/main-layout";
+			initializeLayout();
+		</script>
+	</body>
+</html>

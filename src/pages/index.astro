@@ -1,0 +1,29 @@
+---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
+
+// ¡Importante! Necesitamos obtener la sesión aquí para pasársela al Layout
+import { supabase } from '../lib/supabase';
+const { data: { session } } = await supabase.auth.getSession();
+---
+<Layout title="Bienvenido a App Filadelfia" session={session}>
+  <div class="text-center py-20">
+    <h1 class="text-5xl font-extrabold text-gray-800 mb-4">
+      Plataforma de Gestión Congregacional Filadelfia
+    </h1>
+    <p class="text-xl text-gray-600 mb-8">
+      Organizando y fortaleciendo nuestra Comunidad Cristiana.
+    </p>
+    
+    <!-- Mostramos un botón diferente dependiendo de si el usuario ha iniciado sesión -->
+    {session ? (
+      <a href="/personas" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-green-700 transition-colors">
+        Ir al Directorio
+      </a>
+    ) : (
+      <a href="/login" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg hover:bg-green-700 transition-colors">
+        Iniciar Sesión
+      </a>
+    )}
+  </div>
+</Layout>
