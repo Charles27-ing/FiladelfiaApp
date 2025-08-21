@@ -3,14 +3,31 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@components/*": ["./src/components/*"],
-      "@layouts/*": ["./src/layouts/*"],
-      "@pages/*": ["./src/pages/*"],
-      "@assets/*": ["./src/assets/*"],
-      "@/*": ["./src/*"],
-      "@lib/*": ["./src/lib/*"]
-    }
+      "@components/*": ["src/components/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@pages/*": ["src/pages/*"],
+      "@assets/*": ["src/assets/*"],
+      "@/*": ["src/*"],
+      "@lib/*": ["src/lib/*"]
+    },
+    // --- NUEVO ---
+    // Añade esta opción para mejorar la interoperabilidad con paquetes CommonJS
+    "esModuleInterop": true, 
+    // --- NUEVO ---
+    // Permite importar archivos .json directamente
+    "resolveJsonModule": true 
   },
-  "include": [".astro/types.d.ts", "**/*"],
-  "exclude": ["dist"]
+  "include": [
+    // --- MODIFICADO ---
+    // Sé específico sobre qué incluir
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.astro",
+    ".astro/types.d.ts"
+  ],
+  "exclude": [
+    // Es bueno mantener 'dist' y 'node_modules' aquí por si acaso
+    "dist", 
+    "node_modules"
+  ]
 }

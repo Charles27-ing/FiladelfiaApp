@@ -1,34 +1,85 @@
 ---
-// src/pages/personas/index.astro - VERSIÓN REDISEÑADA CON LISTADO MODERNO
-import Layout from "../../layouts/Layout.astro";
-import { supabase } from "../../lib/supabase";
+// src/pages/personas/index.astro - VERSIÓN CORREGIDA Y ROBUSTA
+import Layout from "@layouts/Layout.astro";
+import { supabase } from "@lib/supabase";
 
-// Obtener todas las personas con sus sedes y escalas
-const { data: personas, error } = await supabase
-  .from('persona')
+// Definir interfaces para los tipos de datos
+interface Sede {
+  id: string;
+  nombre_sede: string;
+  codigo: string;
+}
+
+interface Escala {
+  id: string;
+  nombre_escala: string;
+  codigo: string;
+}
+
+interface Persona {
+  id: string;
+  nombres: string;
+  primer_apellido: string;
+  segundo_apellido: string;
+  numero_id: string;
+  tipo_id: string;
+  email: string;
+  telefono: string;
+  url_foto: string | null;
+  sedes: Sede | null; // Puede ser null si no hay sede o el join falla
+  persona_escala: { escala_de_crecimiento: Escala }[]; // Array de objetos con la escala anidada
+  // Añade aquí cualquier otra propiedad de tu tabla persona
+}
+
+// CONSULTA: Usar left joins para incluir personas sin escalas
+const { data, error } = await supabase
+  .from("persona")
   .select(`
-    *,
-    sedes!inner(id, nombre_sede, codigo),
-    persona_escala!inner(
-      escala_de_crecimiento!inner(id, nombre_escala, codigo)
+    id,
+    nombres,
+    primer_apellido,
+    segundo_apellido,
+    numero_id,
+    tipo_id,
+    email,
+    telefono,
+    url_foto,
+    sedes(id, nombre_sede, codigo),
+    persona_escala(
+      escala_de_crecimiento(id, nombre_escala, codigo)
     )
   `)
-  .order('created_at', { ascending: false });
+  .order("created_at", { ascending: false });
+
+// Asegurarse de que `data` es un array de Persona o un array vacío
+const personas: Persona[] = (data as Persona[] | null) || [];
 
 if (error) {
   console.error("Error al cargar personas:", error);
+  console.error("Detalles del error:", error.message, error.details, error.hint);
+}
+
+// Debug: Mostrar cuántas personas se cargaron
+console.log(`[DEBUG] Personas cargadas: ${personas.length}`);
+if (personas.length > 0) {
+  console.log("[DEBUG] Primera persona:", personas[0]);
 }
 
 // Procesar los datos para agrupar las escalas por persona
-const personasConEscalas = personas?.map(persona => ({
+const personasConEscalas = personas.map(persona => ({
   ...persona,
-  escalas: persona.persona_escala?.map(pe => pe.escala_de_crecimiento) || []
+  escalas: persona.persona_escala
+    ?.map(pe => pe.escala_de_crecimiento)
+    .filter((escala): escala is Escala => escala !== null) || [] // Asegurar que escala no es null
 })) || [];
+
+console.log(`[DEBUG] Personas procesadas: ${personasConEscalas.length}`);
 
 // Obtener mensajes de éxito/error de la URL
 const successMessage = Astro.url.searchParams.get("success");
 const errorMessage = Astro.url.searchParams.get("error");
 ---
+
 
 <Layout title="Gestión de Personas">
   <!-- ====================================================== -->
@@ -356,7 +407,7 @@ const errorMessage = Astro.url.searchParams.get("error");
               <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 {persona.sedes?.codigo || 'N/A'}
               </span>
-              {persona.escalas.map((escala) => (
+              {persona.escalas.map((escala: any) => (
                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   {escala.codigo}
                 </span>

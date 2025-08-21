@@ -2,13 +2,6 @@
 // src/pages/login.astro - VERSIÓN REDISEÑADA
 import { supabase } from '../lib/supabase';
 
-const { data: { session } } = await supabase.auth.getSession();
-
-// Si el usuario ya tiene sesión, lo redirigimos directamente
-if (session) {
-  return Astro.redirect('/personas');
-}
-
 const errorMessage = Astro.url.searchParams.get('error');
 ---
 

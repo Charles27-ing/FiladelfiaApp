@@ -3,13 +3,6 @@
 import Layout from "../../layouts/Layout.astro";
 import { supabase } from "../../lib/supabase";
 
-// Redirigimos si el usuario no está autenticado
-const {
-    data: { session },
-} = await supabase.auth.getSession();
-if (!session) {
-    return Astro.redirect("/login");
-}
 
 // ¡ACTUALIZACIÓN! Obtenemos tanto las escalas como las sedes
 const { data: escalas } = await supabase
