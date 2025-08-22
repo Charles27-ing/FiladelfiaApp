@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
       throw new Error("No se pudo obtener el ID de la persona recién creada.");
     }
 
-    console.log(`[API] Persona insertada con éxito. ID: ${insertedPerson.id}`);
+    console.log(`[API] Persona insertada con Exito. ID: ${insertedPerson.id}`);
 
 // --- PASO 2: ASOCIAR LAS ESCALAS (usando nuestra nueva función) ---
     // ¡CORRECCIÓN DE FLUJO! Esto ahora se ejecuta ANTES de la redirección.
@@ -170,7 +170,7 @@ export const POST: APIRoute = async ({ request, redirect, cookies }) => {
          
      // --- PASO 3: REDIRECCIÓN DE ÉXITO ---
      console.log("[API] ¡Éxito total! Redirigiendo...");
-     return redirect('/personas?success=Persona+y+escalas+creadas+con+éxito');
+     return redirect('/personas?success=Persona+Creadas+con+Exito');
  
 
   } catch (e: any) {

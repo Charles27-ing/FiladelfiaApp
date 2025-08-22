@@ -1,6 +1,6 @@
 ---
 // src/pages/personas/index.astro - VERSIÓN CORREGIDA Y ROBUSTA
-import Layout from "@layouts/Layout.astro";
+import LayoutProtected from "@layouts/LayoutProtected.astro";
 import { supabase } from "@lib/supabase";
 
 // Definir interfaces para los tipos de datos
@@ -81,7 +81,7 @@ const errorMessage = Astro.url.searchParams.get("error");
 ---
 
 
-<Layout title="Gestión de Personas">
+<LayoutProtected title="Gestión de Personas">
   <!-- ====================================================== -->
   <!-- NOTIFICACIONES -->
   <!-- ====================================================== -->
