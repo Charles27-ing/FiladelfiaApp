@@ -1,227 +1,159 @@
-// src/scripts/personas-actions.js
-// Funciones para las acciones CRUD de personas
+// src/scripts/personas-actions.js - VERSIÓN CORREGIDA PARA ASTRO
 
-/**
- * Variables globales para el manejo de eliminación
- */
+// Variable para almacenar el ID de la persona a eliminar
 let personToDelete = null;
 
 /**
- * Inicializar los event listeners para las acciones
+ * Redirige a la página de detalles de una persona.
+ * @param {string} personId - El ID de la persona.
  */
-export function initializePersonasActions() {
-    setupDeleteModal();
+export function viewPerson(personId) {
+  console.log("viewPerson llamada con ID:", personId);
+  window.location.href = `/personas/${personId}`;
 }
 
 /**
- * Configurar el modal de eliminación
+ * Redirige a la página de edición de una persona.
+ * @param {string} personId - El ID de la persona.
  */
-function setupDeleteModal() {
-    const deleteModal = document.getElementById('delete-modal');
-    const confirmDelete = document.getElementById('confirm-delete');
-    const cancelDelete = document.getElementById('cancel-delete');
-
-    if (confirmDelete) {
-        confirmDelete.addEventListener('click', confirmDeletePerson);
-    }
-    
-    if (cancelDelete) {
-        cancelDelete.addEventListener('click', closeDeleteModal);
-    }
-    
-    // Cerrar modal al hacer clic en el overlay
-    if (deleteModal) {
-        deleteModal.addEventListener('click', function(e) {
-            if (e.target === deleteModal) {
-                closeDeleteModal();
-            }
-        });
-    }
-
-    // Cerrar modal con tecla Escape
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeDeleteModal();
-        }
-    });
+export function editPerson(personId) {
+  console.log("editPerson llamada con ID:", personId);
+  window.location.href = `/personas/${personId}/editar`;
 }
 
 /**
- * Ver detalles de una persona
- * @param {string} personId - ID de la persona
+ * Muestra el modal de confirmación para eliminar una persona.
+ * @param {string} personId - El ID de la persona a eliminar.
+ * @param {string} personName - El nombre completo de la persona a eliminar.
  */
-window.viewPerson = function(personId) {
-    // Redirigir a la página de detalles
-    window.location.href = `/personas/${personId}`;
-};
+export function deletePerson(personId, personName) {
+  console.log("deletePerson llamada con ID:", personId, "Nombre:", personName);
+  personToDelete = personId;
+  const deletePersonNameSpan = document.getElementById("delete-person-name");
+  const deleteModal = document.getElementById("delete-modal");
+
+  if (deletePersonNameSpan) {
+    deletePersonNameSpan.textContent = personName;
+  }
+  if (deleteModal) {
+    deleteModal.classList.remove("hidden");
+  }
+}
 
 /**
- * Editar una persona
- * @param {string} personId - ID de la persona
- */
-window.editPerson = function(personId) {
-    // Redirigir a la página de edición
-    window.location.href = `/personas/${personId}/editar`;
-};
-
-/**
- * Mostrar modal de confirmación para eliminar persona
- * @param {string} personId - ID de la persona
- * @param {string} personName - Nombre de la persona
- */
-window.deletePerson = function(personId, personName) {
-    personToDelete = personId;
-    const deletePersonNameElement = document.getElementById('delete-person-name');
-    const deleteModal = document.getElementById('delete-modal');
-    
-    if (deletePersonNameElement) {
-        deletePersonNameElement.textContent = personName;
-    }
-    
-    if (deleteModal) {
-        deleteModal.classList.remove('hidden');
-        // Enfocar el botón de cancelar para mejor accesibilidad
-        const cancelButton = document.getElementById('cancel-delete');
-        if (cancelButton) {
-            setTimeout(() => cancelButton.focus(), 100);
-        }
-    }
-};
-
-/**
- * Confirmar y ejecutar la eliminación de la persona
+ * Envía la solicitud de eliminación al servidor.
  */
 function confirmDeletePerson() {
-    if (!personToDelete) {
-        console.error('No hay persona seleccionada para eliminar');
-        return;
-    }
-
-    // Mostrar estado de carga en el botón
-    const confirmButton = document.getElementById('confirm-delete');
-    if (confirmButton) {
-        const originalText = confirmButton.textContent;
-        confirmButton.textContent = 'Eliminando...';
-        confirmButton.disabled = true;
-    }
-
-    // Crear formulario para enviar la eliminación
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/api/personas/${personToDelete}/delete`;
-    form.style.display = 'none';
-    
-    // Añadir campo oculto para identificar el método
-    const methodInput = document.createElement('input');
-    methodInput.type = 'hidden';
-    methodInput.name = '_method';
-    methodInput.value = 'DELETE';
-    form.appendChild(methodInput);
-    
-    // Añadir al DOM y enviar
-    document.body.appendChild(form);
-    form.submit();
+  console.log("Confirmando eliminación para ID:", personToDelete);
+  if (personToDelete) {
+    // Usar fetch para llamar al endpoint de eliminación
+    fetch(`/api/personas/${personToDelete}/delete`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+    .then(response => {
+      if (response.ok) {
+        // Redirigir con mensaje de éxito
+        window.location.href = '/personas?success=' + encodeURIComponent('Persona eliminada correctamente');
+      } else {
+        // Redirigir con mensaje de error
+        window.location.href = '/personas?error=' + encodeURIComponent('Error al eliminar la persona<');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      window.location.href = '/personas?error=' + encodeURIComponent('Error de conexión al eliminar la persona');
+    });
+  }
 }
 
 /**
- * Cerrar el modal de eliminación
+ * Cierra el modal de confirmación de eliminación.
  */
 function closeDeleteModal() {
-    const deleteModal = document.getElementById('delete-modal');
-    const confirmButton = document.getElementById('confirm-delete');
-    
-    if (deleteModal) {
-        deleteModal.classList.add('hidden');
-    }
-    
-    // Restaurar el botón de confirmación
-    if (confirmButton) {
-        confirmButton.textContent = 'Eliminar';
-        confirmButton.disabled = false;
-    }
-    
-    // Limpiar la variable
-    personToDelete = null;
+  console.log("Cerrando modal de eliminación.");
+  const deleteModal = document.getElementById("delete-modal");
+  if (deleteModal) {
+    deleteModal.classList.add("hidden");
+  }
+  personToDelete = null;
 }
 
 /**
- * Mostrar notificación de éxito o error
- * @param {string} message - Mensaje a mostrar
- * @param {string} type - Tipo de notificación ('success' o 'error')
- */
-export function showNotification(message, type = 'success') {
-    // Crear elemento de notificación
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 max-w-sm w-full bg-white shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden transform transition-all duration-300 translate-x-full`;
-    
-    const bgColor = type === 'success' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200';
-    const iconColor = type === 'success' ? 'text-green-400' : 'text-red-400';
-    const textColor = type === 'success' ? 'text-green-800' : 'text-red-800';
-    
-    const icon = type === 'success' 
-        ? '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>'
-        : '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>';
-    
-    notification.innerHTML = `
-        <div class="p-4 ${bgColor} border">
-            <div class="flex">
-                <svg class="h-5 w-5 ${iconColor}" viewBox="0 0 20 20" fill="currentColor">
-                    ${icon}
-                </svg>
-                <div class="ml-3">
-                    <p class="text-sm font-medium ${textColor}">${message}</p>
-                </div>
-                <div class="ml-auto pl-3">
-                    <button class="inline-flex ${textColor} hover:${textColor.replace('800', '600')} focus:outline-none" onclick="this.parentElement.parentElement.parentElement.parentElement.remove()">
-                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Añadir al DOM
-    document.body.appendChild(notification);
-    
-    // Animar entrada
-    setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Auto-remover después de 5 segundos
-    setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-        }, 300);
-    }, 5000);
-}
-
-/**
- * Manejar respuestas de la API y mostrar notificaciones apropiadas
+ * Maneja la respuesta de la API (mensajes de éxito/error).
  */
 export function handleApiResponse() {
-    // Verificar parámetros de URL para mensajes de éxito/error
-    const urlParams = new URLSearchParams(window.location.search);
-    const successMessage = urlParams.get('success');
-    const errorMessage = urlParams.get('error');
-    
+  const urlParams = new URLSearchParams(window.location.search);
+  const successMessage = urlParams.get("success");
+  const errorMessage = urlParams.get("error");
+  const notificationContainer = document.getElementById("notification-container");
+
+  if (notificationContainer) {
+    notificationContainer.innerHTML = ""; // Limpiar notificaciones anteriores
+
     if (successMessage) {
-        showNotification(decodeURIComponent(successMessage), 'success');
-        // Limpiar la URL sin recargar la página
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+      notificationContainer.innerHTML = `
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+          <strong class="font-bold">¡Éxito!</strong>
+          <span class="block sm:inline">${decodeURIComponent(successMessage)}</span>
+          <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="this.parentElement.style.display='none';">
+            <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Cerrar</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+          </span>
+        </div>
+      `;
+      // Limpiar el parámetro de la URL después de mostrar el mensaje
+      history.replaceState({}, document.title, window.location.pathname);
+    } else if (errorMessage) {
+      notificationContainer.innerHTML = `
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong class="font-bold">¡Error!</strong>
+          <span class="block sm:inline">${decodeURIComponent(errorMessage)}</span>
+          <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="this.parentElement.style.display='none';">
+            <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Cerrar</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+          </span>
+        </div>
+      `;
+      history.replaceState({}, document.title, window.location.pathname);
     }
-    
-    if (errorMessage) {
-        showNotification(decodeURIComponent(errorMessage), 'error');
-        // Limpiar la URL sin recargar la página
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+  }
+}
+
+/**
+ * Inicializa los event listeners para las acciones de personas (modal de eliminación).
+ */
+export function initializePersonasActions() {
+  console.log("Inicializando event listeners para acciones de personas...");
+  const confirmDelete = document.getElementById("confirm-delete");
+  const cancelDelete = document.getElementById("cancel-delete");
+  const deleteModal = document.getElementById("delete-modal");
+
+  if (confirmDelete) {
+    confirmDelete.addEventListener("click", confirmDeletePerson);
+  }
+  
+  if (cancelDelete) {
+    cancelDelete.addEventListener("click", closeDeleteModal);
+  }
+  
+  if (deleteModal) {
+    // Cerrar modal al hacer clic fuera de él
+    deleteModal.addEventListener("click", function(e) {
+      if (e.target === deleteModal) {
+        closeDeleteModal();
+      }
+    });
+  }
+
+  // Cerrar modal con tecla Escape
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape") {
+      closeDeleteModal();
     }
+  });
+
+  // Manejar mensajes de la API al cargar la página
+  handleApiResponse();
 }
 
