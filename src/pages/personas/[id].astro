@@ -1,9 +1,7 @@
 ---
-
 // src/pages/personas/index.astro - VERSIÓN CORREGIDA PARA ASTRO
 import LayoutProtected from "@layouts/LayoutProtected.astro";
 import { supabase } from "@lib/supabase";
-
 
 // Definir interfaces para los tipos de datos
 interface Sede {
@@ -15,7 +13,7 @@ interface Sede {
 interface Escala {
   id: string;
   nombre_escala: string;
-}
+ }
 
 interface Persona {
   id: string;
@@ -27,8 +25,9 @@ interface Persona {
   email: string;
   telefono: string;
   url_foto: string | null;
-  sedes: Sede | null;
-  persona_escala: { escala_de_crecimiento: Escala }[];
+  sedes: Sede | null; // Puede ser null si no hay sede o el join falla
+  persona_escala: { escala_de_crecimiento: Escala }[]; // Array de objetos con la escala anidada
+  // Añade aquí cualquier otra propiedad de tu tabla persona
 }
 
 // CONSULTA: Usar left joins para incluir personas sin escalas
@@ -67,7 +66,7 @@ const personasConEscalas = personas.map(persona => ({
   ...persona,
   escalas: persona.persona_escala
     ?.map(pe => pe.escala_de_crecimiento)
-    .filter((escala): escala is Escala => escala !== null) || []
+    .filter((escala): escala is Escala => escala !== null) || [] // Asegurar que escala no es null
 })) || [];
 
 console.log(`[DEBUG] Personas procesadas: ${personasConEscalas.length}`);
@@ -302,4 +301,3 @@ const personasData = personasDataElement ? JSON.parse(personasDataElement.textCo
   <!-- Datos JSON para JavaScript -->
   <script id="personas-data" type="application/json" set:html={JSON.stringify(personasConEscalas)}></script>
 </LayoutProtected>
-

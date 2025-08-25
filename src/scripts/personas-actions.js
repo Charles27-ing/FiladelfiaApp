@@ -7,21 +7,9 @@ let personToDelete = null;
  * Redirige a la página de detalles de una persona.
  * @param {string} personId - El ID de la persona.
  */
-<<<<<<< HEAD:public/scripts/personas-actions.js
-// Funciones globales
-window.viewPerson = function(personId) { /* ... */ };
-window.editPerson = function(personId) { /* ... */ };
-window.deletePerson = function(personId, personName) { /* ... */ };
-
-// Función de inicialización
-window.initializePersonasActions = function() {
-  console.log("Inicializando acciones de personas...");
-    setupDeleteModal();
-=======
 export function viewPerson(personId) {
   console.log("viewPerson llamada con ID:", personId);
   window.location.href = `/personas/${personId}`;
->>>>>>> 43f7a7bf6cfaa8f8064b67b13fb9d3f150c39f45:src/scripts/personas-actions.js
 }
 
 /**
@@ -168,4 +156,3 @@ export function initializePersonasActions() {
   // Manejar mensajes de la API al cargar la página
   handleApiResponse();
 }
-

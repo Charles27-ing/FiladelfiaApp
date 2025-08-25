@@ -1,18 +1,36 @@
 ---
 // src/pages/personas/nueva.astro
-import LayoutProtected from "../../layouts/LayoutProtected.astro";
-import { supabase } from "../../lib/supabase";
+import LayoutProtected from "@layouts/LayoutProtected.astro";
+import { supabase } from "@/lib/supabase";
+import type { Departamento } from "../../models/persona.model";
 
-// ¡ACTUALIZACIÓN! Obtenemos tanto las escalas como las sedes
+// Cargar datos de Colombia (departamentos y municipios)
+import colombiaData from "../../data/colombia.json";
+const departamentos: Departamento[] = colombiaData.map((dept: any) => ({
+  id: dept.id.toString(),
+  nombre: dept.departamento,
+  ciudades: dept.ciudades.map((ciudad: string, index: number) => ({
+    id: `${dept.id}-${index}`,
+    nombre: ciudad
+  }))
+}));
+
+// Obtener escalas de crecimiento
 const { data: escalas } = await supabase
     .from("escala_de_crecimiento")
     .select("id, nombre_escala")
     .order("id", { ascending: true });
 
-// Obtenemos las sedes del lado del servidor al cargar la página
+// Obtener sedes
 const { data: sedes, error } = await supabase
     .from("sedes")
     .select("id, nombre_sede");
+
+// Obtener ministerios
+const { data: ministerios } = await supabase
+    .from("ministerios")
+    .select("id, nombre_minist")
+    .order("nombre_minist", { ascending: true });
 
 if (error) {
     console.error("Error al cargar las sedes:", error);
@@ -22,376 +40,585 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
 
 <LayoutProtected title="Registrar Nueva Persona">
     <div class="bg-gray-50 p-4 sm:p-8">
-        <div class="max-w-4xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+        <div class="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
             <h1 class="text-3xl font-bold text-gray-800 mb-6">
                 Registro de Nueva Persona
             </h1>
 
-            <!-- PASO 2: FORMULARIO COMPLETO (inicialmente oculto) -->
+            <!-- FORMULARIO COMPLETO -->
             <form
                 id="wizard-form"
                 method="POST"
                 action="/api/personas"
                 enctype="multipart/form-data"
+                class="space-y-8"
             >
                 <!-- PASO 1: VERIFICACIÓN DE ID -->
-                <div id="step-1">
-                    <h2
-                        class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4"
-                    >
-                        Paso 1: Identificación
+                <div id="step-1" class="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-lg border border-green-200">
+                    <h2 class="text-xl font-semibold text-green-800 border-b border-green-300 pb-2 mb-4">
+                        Paso 1: Verificación de Identificación
                     </h2>
-                    <div
-                        class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
-                    >
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div class="md:col-span-2">
-                            <label
-                                for="numero_id"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Número de Identificación</label
-                            >
+                            <label for="numero_id" class="block mb-1 text-sm font-medium text-gray-700">
+                                Número de Identificación
+                            </label>
                             <input
                                 type="text"
                                 id="numero_id"
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Introduce el ID"
+                                name="numero_id"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
+                                placeholder="Ingrese el número de identificación"
                             />
                         </div>
-
                         <div>
                             <button
                                 type="button"
-                                id="verify-btn"
-                                class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out"
+                                id="check-id-btn"
+                                class="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
                             >
-                                Verificar y Continuar
+                                Verificar ID
                             </button>
                         </div>
                     </div>
-                    <div
-                        id="id-error-message"
-                        class="hidden mt-2 text-sm text-red-600 p-3 bg-red-50 rounded-md"
-                    >
-                    </div>
-                </div>
-                <div
-                    id="step-2-message"
-                    class="p-4 bg-green-50 border-l-4 border-green-400 text-green-700"
-                >
-                    <!-- El mensaje se insertará aquí con JavaScript -->
+                    <div id="id-status" class="mt-3 text-sm"></div>
                 </div>
 
-                <input type="hidden" name="numero_id" id="form_numero_id" />
-
-                <!-- PASO 2: CAMPOS ADICIONALES (inicialmente oculto) -->
-                <div id="step-2" class="hidden space-y-4">
-                    <!-- Campo oculto para pasar el numero_id verificado -->
-                    <!-- <input type="hidden" id="verified_numero_id" name="numero_id" /> -->
-
-                    <!-- tIPO DE ID -->
-                    <div>
-                        <label
-                            for="tipo_id"
-                            class="block text-sm font-medium text-gray-700"
-                            >Tipo de ID</label
-                        >
-                        <select
-                            id="tipo_id"
-                            name="tipo_id"
-                            required
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
-                        >
-                            <option value="Cédula de Ciudadanía"
-                                >Cédula de Ciudadanía</option
-                            >
-                            <option value="Tarjeta de Identidad"
-                                >Tarjeta de Identidad</option
-                            >
-                            <option value="Registro Civil">Registro Civil</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                    <!-- Fila 2: Nombres y Apellidos -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- INFORMACIÓN PERSONAL -->
+                <div id="step-personal" class="hidden bg-gradient-to-br from-gray-50 to-slate-100 p-6 rounded-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-6">
+                        Información Personal
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Tipo de Documento -->
                         <div>
-                            <label
-                                for="nombres"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Nombres</label
+                            <label for="tipo_id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Tipo de Documento
+                            </label>
+                            <select
+                                id="tipo_id"
+                                name="tipo_id"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
+                                <option value="">Seleccione...</option>
+                                <option value="CC">Cédula de Ciudadanía</option>
+                                <option value="TI">Tarjeta de Identidad</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                                <option value="RC">Registro Civil</option>
+                            </select>
+                        </div>
+
+                        <!-- Nombres -->
+                        <div>
+                            <label for="nombres" class="block text-sm font-medium text-gray-700 mb-1">
+                                Nombres
+                            </label>
                             <input
                                 type="text"
                                 id="nombres"
                                 name="nombres"
                                 required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm
-                            placeholder-gray-400
-                            focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Ej: Juan Carlos"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="Nombres completos"
                             />
                         </div>
+
+                        <!-- Primer Apellido -->
                         <div>
-                            <label
-                                for="primer_apellido"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Primer Apellido</label
-                            >
+                            <label for="primer_apellido" class="block text-sm font-medium text-gray-700 mb-1">
+                                Primer Apellido
+                            </label>
                             <input
                                 type="text"
                                 id="primer_apellido"
                                 name="primer_apellido"
                                 required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Ej: Rodríguez"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="Primer apellido"
                             />
                         </div>
-                    </div>
-                    <div>
-                        <label
-                            for="segundo_apellido"
-                            class="block mb-1 text-sm font-medium text-gray-700"
-                            >Segundo Apellido (Opcional)</label
-                        >
-                        <input
-                            type="text"
-                            id="segundo_apellido"
-                            name="segundo_apellido"
-                            class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            placeholder="Ej: Rodríguez"
-                        />
-                    </div>
 
-                    <!-- Fila 3: Género y Nacimiento -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Segundo Apellido -->
                         <div>
-                            <label
-                                for="genero"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Género</label
-                            >
-                            <select
-                                id="genero"
-                                name="genero"
-                                required
-                                class="mblock w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            >
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
-                            </select>
+                            <label for="segundo_apellido" class="block text-sm font-medium text-gray-700 mb-1">
+                                Segundo Apellido
+                            </label>
+                            <input
+                                type="text"
+                                id="segundo_apellido"
+                                name="segundo_apellido"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="Segundo apellido (opcional)"
+                            />
                         </div>
+
+                        <!-- Fecha de Nacimiento -->
                         <div>
-                            <label
-                                for="fecha_nacimiento"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Fecha de Nacimiento</label
-                            >
+                            <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-1">
+                                Fecha de Nacimiento
+                            </label>
                             <input
                                 type="date"
                                 id="fecha_nacimiento"
                                 name="fecha_nacimiento"
                                 required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             />
                         </div>
-                    </div>
 
-                    <!-- Fila 4: Email y Telefono -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Género -->
                         <div>
-                            <label
-                                for="email"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Email</label
-                            >
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
+                            <label for="genero" class="block text-sm font-medium text-gray-700 mb-1">
+                                Género
+                            </label>
+                            <select
+                                id="genero"
+                                name="genero"
                                 required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            />
-                        </div>
-                        <div>
-                            <label
-                                for="telefono"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Teléfono</label
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                             >
+                                <option value="">Seleccione...</option>
+                                <option value="Masculino">Masculino</option>
+                                <option value="Femenino">Femenino</option>
+                            </select>
+                        </div>
+
+                        <!-- Estado Civil -->
+                        <div>
+                            <label for="estado_civil" class="block text-sm font-medium text-gray-700 mb-1">
+                                Estado Civil
+                            </label>
+                            <select
+                                id="estado_civil"
+                                name="estado_civil"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                            >
+                                <option value="">Seleccione...</option>
+                                <option value="SOLTERO(A)">Soltero(a)</option>
+                                <option value="CASADO(A)">Casado(a)</option>
+                                <option value="UNION-LIBRE">Unión Libre</option>
+                                <option value="VIUDO(A)">Viudo(a)</option>
+                            </select>
+                        </div>
+
+                        <!-- Teléfono -->
+                        <div>
+                            <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">
+                                Teléfono
+                            </label>
                             <input
                                 type="tel"
                                 id="telefono"
                                 name="telefono"
                                 required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="Número de teléfono"
+                            />
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
+                                Correo Electrónico
+                            </label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                placeholder="correo@ejemplo.com"
                             />
                         </div>
                     </div>
 
-                    <!-- Sección: Información de la Iglesia -->
-                    <fieldset class="border-t pt-6 mt-6 bg-gradient-to-br from-green-50 to-slate-100 p-6">
-                        <legend class="text-lg font-semibold text-gray-700 mb-4"
-                            >Información de la Iglesia</legend
-                        >
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Campo Sede -->
+                    <!-- Ubicación -->
+                    <div class="mt-6">
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Ubicación</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Departamento -->
                             <div>
-                                <label
-                                    for="sede_id"
-                                    class="block mb-1 text-sm font-medium text-gray-700"
-                                    >Sede</label
-                                >
+                                <label for="departamento" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Departamento
+                                </label>
                                 <select
-                                    id="sede_id"
-                                    name="sede_id"
+                                    id="departamento"
+                                    name="departamento"
                                     required
-                                    class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                 >
-                                    <!-- Opciones de sedes aquí -->
-                                    {sedes &&
-                                        sedes.map((sede) => (
-                                            <option key={sede.id} value={sede.id}>
-                                                {sede.nombre_sede}
-                                            </option>
-                                        ))}
+                                    <option value="">Seleccione departamento...</option>
+                                    {departamentos.map((dept) => (
+                                        <option value={dept.nombre}>{dept.nombre}</option>
+                                    ))}
                                 </select>
                             </div>
 
-                            <!-- LISTA DE ESCALAS DE CRECIMIENTO (NUEVO) fila 4.1 -->
-                            <div class="mb-4">
-                                <label
-                                    class="block mb-1 text-sm font-medium text-gray-700"
-                                    >Escalas de Crecimiento Realizadas</label
+                            <!-- Municipio -->
+                            <div>
+                                <label for="municipio" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Municipio
+                                </label>
+                                <select
+                                    id="municipio"
+                                    name="municipio"
+                                    required
+                                    disabled
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
                                 >
-                                <div
-                                    id="escalas-container"
-                                    class="mt-2 space-y-2"
-                                >
-                                    {
-                                        escalas &&
-                                            escalas.map((escala) => (
-                                                <div class="flex items-center">
-                                                    <input
-                                                        id={`escala-${escala.id}`}
-                                                        name="escalas_seleccionadas"
-                                                        type="checkbox"
-                                                        value={escala.id}
-                                                        class="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                                    />
-                                                    <label
-                                                        for={`escala-${escala.id}`}
-                                                        class="ml-3 block text-sm text-gray-900"
-                                                    >
-                                                        {escala.nombre_escala}
-                                                    </label>
-                                                </div>
-                                            ))
-                                    }
-                                </div>
+                                    <option value="">Seleccione municipio...</option>
+                                </select>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div>
+                                <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Dirección/Barrio
+                                </label>
+                                <input
+                                    type="text"
+                                    id="direccion"
+                                    name="direccion"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                                    placeholder="Dirección completa o barrio"
+                                />
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Fila 5: Dirección y Foto -->
-                        <div>
-                            <label
-                                for="direccion"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Dirección</label
-                            >
-                            <input
-                                type="text"
-                                id="direccion"
-                                name="direccion"
-                                required
-                                class="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            />
-                        </div>
-                        <!-- FOTO  -->
-                        <div class="col-span-full mb-4">
-                            <label
-                                for="foto_upload"
-                                class="block mb-1 text-sm font-medium text-gray-700"
-                                >Foto (Opcional)</label
-                            >
-                            <!-- Contenedor para la previsualización de la imagen -->
-                            <div class="mt-2 flex items-center gap-x-3">
+                    <!-- Foto con Previsualización -->
+                    <div class="mt-6">
+                        <label for="foto" class="block text-sm font-medium text-gray-700 mb-2">
+                            Fotografía (opcional)
+                        </label>
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-1">
                                 <input
                                     type="file"
-                                    id="foto_upload"
-                                    name="foto_upload"
-                                    accept="image/png, image/jpeg, image/webp"
+                                    id="foto"
+                                    name="foto"
+                                    accept="image/*"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                                 />
-                                <img
-                                    id="foto-preview"
-                                    src="../assets/images/placeholder.png"
-                                    alt="VistaFoto"
-                                    class="w-[100px] h-[100px] rounded-md object-cover mx-auto md:mx-0"
-                                />
+                                <p class="mt-1 text-sm text-gray-500">
+                                    Formatos permitidos: JPG, PNG. Tamaño máximo: 5MB
+                                </p>
                             </div>
-                        </div>
-
-                        <!-- Botón de envío final -->
-                        <div class="pt-4 border-t border-gray-200">
-                            <!-- ¡CAMBIO IMPORTANTE! Este SÍ es type="submit" -->
-                            <div
-                                id="validation-error"
-                                class="hidden mb-4 p-3 rounded-md bg-red-50 border border-red-400 text-red-700"
-                            >
-                            </div>
-                            <div class="flex justify-end pt-6 border-t mt-6">
-                                <button
-                                    type="submit"
-                                    id="submit-btn"
-                                    class="bg-blue-400 text-white font-bold py-2 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out"
-                                >
-                                    Guardar Persona
+                            <!-- Previsualización de la imagen -->
+                            <div id="image-preview-container" class="hidden">
+                                <div class="w-24 h-24 border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50">
+                                    <img id="image-preview" src="" alt="Vista previa" class="w-full h-full object-cover">
+                                </div>
+                                <button type="button" id="remove-image" class="mt-2 text-xs text-red-600 hover:text-red-800">
+                                    Quitar imagen
                                 </button>
                             </div>
                         </div>
-                    </fieldset>
+                    </div>
+                </div>
+
+                <!-- INFORMACIÓN DE LA IGLESIA -->
+                <div id="step-church" class="hidden bg-gradient-to-br from-emerald-50 to-green-100 p-6 rounded-lg border border-emerald-200">
+                    <h2 class="text-xl font-semibold text-emerald-800 border-b border-emerald-300 pb-2 mb-6">
+                        Información de la Iglesia
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Sede -->
+                        <div>
+                            <label for="sede_id" class="block text-sm font-medium text-gray-700 mb-1">
+                                Sede
+                            </label>
+                            <select
+                                id="sede_id"
+                                name="sede_id"
+                                required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                            >
+                                <option value="">Seleccione una sede...</option>
+                                {sedes && sedes.map((sede) => (
+                                    <option value={sede.id}>{sede.nombre_sede}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <!-- Estado de Bautismo -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">
+                                Estado de Bautismo
+                            </label>
+                            <div class="flex space-x-6">
+                                <label class="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="bautizado"
+                                        value="true"
+                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                                    />
+                                    <span class="ml-2 text-sm text-gray-700">Sí, está bautizado</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input
+                                        type="radio"
+                                        name="bautizado"
+                                        value="false"
+                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                                    />
+                                    <span class="ml-2 text-sm text-gray-700">No está bautizado</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Escalas de Crecimiento -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Escalas de Crecimiento
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {escalas && escalas.map((escala) => (
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                    <input
+                                        type="checkbox"
+                                        name="escalas"
+                                        value={escala.id}
+                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                                    />
+                                    <span class="ml-3 text-sm text-gray-700">{escala.nombre_escala}</span>
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    <!-- Ministerios -->
+                    <div class="mt-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            Ministerios
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {ministerios && ministerios.map((ministerio) => (
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                    <input
+                                        type="checkbox"
+                                        name="ministerios"
+                                        value={ministerio.id}
+                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                                    />
+                                    <span class="ml-3 text-sm text-gray-700">{ministerio.nombre_minist}</span>
+                                </label>
+                            ))}
+                        </div>
+                        <p class="mt-2 text-sm text-gray-500">
+                            Puede seleccionar todos los ministerios en los que participa.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- BOTONES DE NAVEGACIÓN -->
+                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                    <button
+                        type="button"
+                        id="prev-btn"
+                        class="hidden px-6 py-2 bg-gradient-to-r from-gray-500 to-slate-500 text-white rounded-md hover:from-gray-600 hover:to-slate-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
+                    >
+                        Anterior
+                    </button>
+                    
+                    <div class="flex space-x-4">
+                        <button
+                            type="button"
+                            id="next-btn"
+                            class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
+                        >
+                            Siguiente
+                        </button>
+                        <button
+                            type="submit"
+                            id="submit-btn"
+                            class="hidden px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-md hover:from-emerald-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
+                        >
+                            Guardar Persona
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
-        <script>
-            import { initializePersonaWizard } from "../../scripts/personas/wizard-form.ts";
-            initializePersonaWizard();
-
-            const fotoUploadInput = document.getElementById(
-                "foto_upload",
-            ) as HTMLInputElement;
-            const fotoPreviewImg = document.getElementById(
-                "foto-preview",
-            ) as HTMLImageElement;
-
-            // Verificamos que ambos elementos existan para evitar errores
-            if (fotoUploadInput && fotoPreviewImg) {
-                fotoUploadInput.addEventListener("change", (event) => {
-                    // Obtenemos el archivo seleccionado
-                    const input = event.target as HTMLInputElement;
-                    const file = input.files ? input.files[0] : null;
-
-                    if (file) {
-                        // Si hay un archivo, usamos FileReader para leerlo
-                        const reader = new FileReader();
-
-                        reader.onload = (e) => {
-                            // Cuando el archivo se ha leído, ponemos su contenido
-                            // como el 'src' de nuestra imagen de previsualización.
-                            if (
-                                e.target &&
-                                typeof e.target.result === "string"
-                            ) {
-                                fotoPreviewImg.src = e.target.result;
-                            }
-                        };
-
-                        // Le decimos al reader que lea el archivo como una URL de datos
-                        reader.readAsDataURL(file);
-                    } else {
-                        // Si el usuario cancela la selección, volvemos a la imagen por defecto
-                        fotoPreviewImg.src = "../assets/images/placeholder.png";
-                    }
-                });
-            }
-        </script>
     </div>
+
+    <!-- Script para manejar la lógica del formulario -->
+    <script is:inline define:vars={{ departamentos }}>
+        // Pasar datos de departamentos al contexto global
+        window.departamentosData = departamentos;
+    </script>
+    
+    <script is:inline>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Variables del DOM
+            const step1 = document.getElementById('step-1');
+            const stepPersonal = document.getElementById('step-personal');
+            const stepChurch = document.getElementById('step-church');
+            const checkIdBtn = document.getElementById('check-id-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const submitBtn = document.getElementById('submit-btn');
+            const idStatus = document.getElementById('id-status');
+            const numeroIdInput = document.getElementById('numero_id');
+            const departamentoSelect = document.getElementById('departamento');
+            const municipioSelect = document.getElementById('municipio');
+
+            let currentStep = 1;
+            let idVerified = false;
+
+            // Función para verificar ID
+            checkIdBtn.addEventListener('click', async function() {
+                const numeroId = numeroIdInput.value.trim();
+                
+                if (!numeroId) {
+                    showIdStatus('Por favor ingrese un número de identificación.', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/id-checker', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ numero_id: numeroId }),
+                    });
+
+                    const result = await response.json();
+
+                    if (result.exists) {
+                        showIdStatus('Este número de identificación ya está registrado.', 'error');
+                        idVerified = false;
+                    } else {
+                        showIdStatus('✓ Número de identificación disponible. Puede continuar.', 'success');
+                        idVerified = true;
+                        nextBtn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error al verificar ID:', error);
+                    showIdStatus('Error al verificar el ID. Intente nuevamente.', 'error');
+                    idVerified = false;
+                }
+            });
+
+            // Función para mostrar estado del ID
+            function showIdStatus(message, type) {
+                idStatus.innerHTML = `
+                    <div class="p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                        ${message}
+                    </div>
+                `;
+            }
+
+            // Navegación entre pasos
+            nextBtn.addEventListener('click', function() {
+                if (currentStep === 1 && !idVerified) {
+                    showIdStatus('Debe verificar el número de identificación primero.', 'error');
+                    return;
+                }
+
+                if (currentStep === 1) {
+                    // Ir al paso de información personal
+                    step1.classList.add('hidden');
+                    stepPersonal.classList.remove('hidden');
+                    prevBtn.classList.remove('hidden');
+                    currentStep = 2;
+                } else if (currentStep === 2) {
+                    // Ir al paso de información de la iglesia
+                    stepPersonal.classList.add('hidden');
+                    stepChurch.classList.remove('hidden');
+                    nextBtn.classList.add('hidden');
+                    submitBtn.classList.remove('hidden');
+                    currentStep = 3;
+                }
+            });
+
+            prevBtn.addEventListener('click', function() {
+                if (currentStep === 2) {
+                    // Volver al paso 1
+                    stepPersonal.classList.add('hidden');
+                    step1.classList.remove('hidden');
+                    prevBtn.classList.add('hidden');
+                    currentStep = 1;
+                } else if (currentStep === 3) {
+                    // Volver al paso 2
+                    stepChurch.classList.add('hidden');
+                    stepPersonal.classList.remove('hidden');
+                    nextBtn.classList.remove('hidden');
+                    submitBtn.classList.add('hidden');
+                    currentStep = 2;
+                }
+            });
+
+            // Lógica para departamento/municipio
+            departamentoSelect.addEventListener('change', function() {
+                const selectedDept = this.value;
+                municipioSelect.innerHTML = '<option value="">Seleccione municipio...</option>';
+                municipioSelect.disabled = true;
+
+                if (selectedDept && window.departamentosData) {
+                    const departamento = window.departamentosData.find(d => d.nombre === selectedDept);
+                    if (departamento && departamento.ciudades) {
+                        departamento.ciudades.forEach(ciudad => {
+                            const option = document.createElement('option');
+                            option.value = ciudad.nombre;
+                            option.textContent = ciudad.nombre;
+                            municipioSelect.appendChild(option);
+                        });
+                        municipioSelect.disabled = false;
+                    }
+                }
+            });
+
+            // Lógica de previsualización de imagen
+            const fotoInput = document.getElementById('foto');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const imagePreview = document.getElementById('image-preview');
+            const removeImageBtn = document.getElementById('remove-image');
+
+            fotoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    // Validar tamaño (5MB máximo)
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('El archivo es demasiado grande. El tamaño máximo es 5MB.');
+                        fotoInput.value = '';
+                        return;
+                    }
+
+                    // Validar tipo de archivo
+                    if (!file.type.startsWith('image/')) {
+                        alert('Por favor seleccione un archivo de imagen válido.');
+                        fotoInput.value = '';
+                        return;
+                    }
+
+                    // Mostrar previsualización
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            removeImageBtn.addEventListener('click', function() {
+                fotoInput.value = '';
+                imagePreview.src = '';
+                imagePreviewContainer.classList.add('hidden');
+            });
+
+            // Los ministerios ya no tienen límite - se eliminó la validación de máximo 2
+        });
+    </script>
 </LayoutProtected>
+

@@ -10,6 +10,6 @@ export const GET: APIRoute = async ({ cookies, redirect }) => {
   cookies.delete('sb-access-token', { path: '/' });
   cookies.delete('sb-refresh-token', { path: '/' });
   
-  // Redirigir al login
+  // Redirigir al index
   return redirect('/');
 };
