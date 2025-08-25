@@ -9,7 +9,14 @@ let personToDelete = null;
 /**
  * Inicializar los event listeners para las acciones
  */
-export function initializePersonasActions() {
+// Funciones globales
+window.viewPerson = function(personId) { /* ... */ };
+window.editPerson = function(personId) { /* ... */ };
+window.deletePerson = function(personId, personName) { /* ... */ };
+
+// Función de inicialización
+window.initializePersonasActions = function() {
+  console.log("Inicializando acciones de personas...");
     setupDeleteModal();
 }
 

@@ -1,7 +1,7 @@
 ---
-// src/pages/personas/index.astro - VERSIÓN CORREGIDA Y ROBUSTA
-import LayoutProtected from "@layouts/LayoutProtected.astro";
-import { supabase } from "@lib/supabase";
+// src/pages/personas/index.astro - VERSIÓN REFACTORIZADA CON SCRIPTS EXTERNOS
+import LayoutProtected from "../../layouts/LayoutProtected.astro";
+import { supabase } from "../../lib/supabase";
 
 // Definir interfaces para los tipos de datos
 interface Sede {
@@ -13,7 +13,7 @@ interface Sede {
 interface Escala {
   id: string;
   nombre_escala: string;
- }
+}
 
 interface Persona {
   id: string;
@@ -25,9 +25,8 @@ interface Persona {
   email: string;
   telefono: string;
   url_foto: string | null;
-  sedes: Sede | null; // Puede ser null si no hay sede o el join falla
-  persona_escala: { escala_de_crecimiento: Escala }[]; // Array de objetos con la escala anidada
-  // Añade aquí cualquier otra propiedad de tu tabla persona
+  sedes: Sede | null;
+  persona_escala: { escala_de_crecimiento: Escala }[];
 }
 
 // CONSULTA: Usar left joins para incluir personas sin escalas
@@ -60,16 +59,13 @@ if (error) {
 
 // Debug: Mostrar cuántas personas se cargaron
 console.log(`[DEBUG] Personas cargadas: ${personas.length}`);
-if (personas.length > 0) {
- 
-}
 
 // Procesar los datos para agrupar las escalas por persona
 const personasConEscalas = personas.map(persona => ({
   ...persona,
   escalas: persona.persona_escala
     ?.map(pe => pe.escala_de_crecimiento)
-    .filter((escala): escala is Escala => escala !== null) || [] // Asegurar que escala no es null
+    .filter((escala): escala is Escala => escala !== null) || []
 })) || [];
 
 console.log(`[DEBUG] Personas procesadas: ${personasConEscalas.length}`);
@@ -78,7 +74,6 @@ console.log(`[DEBUG] Personas procesadas: ${personasConEscalas.length}`);
 const successMessage = Astro.url.searchParams.get("success");
 const errorMessage = Astro.url.searchParams.get("error");
 ---
-
 
 <LayoutProtected title="Gestión de Personas">
   <!-- ====================================================== -->
@@ -113,7 +108,26 @@ const errorMessage = Astro.url.searchParams.get("error");
         Gestiona la información de los miembros y visitantes de la congregación
       </p>
     </div>
-
+    <div class="mt-4 sm:mt-0">
+      <a
+        href="/personas/nueva"
+        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 mr-2"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fill-rule="evenodd"
+            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+            clip-rule="evenodd"
+          />
+        </svg>
+        Registrar Nueva Persona
+      </a>
+    </div>
   </div>
 
   <!-- ====================================================== -->
@@ -297,7 +311,6 @@ const errorMessage = Astro.url.searchParams.get("error");
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
               <div class="text-sm text-gray-900">{persona.telefono}</div>
               <div class="text-sm text-gray-500">{persona.email}</div>
-              
             </td>
             <td
               class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
@@ -366,6 +379,7 @@ const errorMessage = Astro.url.searchParams.get("error");
       </tbody>
     </table>
   </div>
+
   <!-- ====================================================== -->
   <!-- VISTA DE TARJETAS (MÓVIL) -->
   <!-- ====================================================== -->
@@ -404,9 +418,10 @@ const errorMessage = Astro.url.searchParams.get("error");
                 <button
                   type="button"
                   class="text-green-600 hover:text-green-900 p-1"
-                  onclick={`viewPerson('${persona.id}')`}
+                  onclick={`viewPerson(\'${persona.id}\')`}
+                  title="Ver detalles"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
@@ -414,18 +429,20 @@ const errorMessage = Astro.url.searchParams.get("error");
                 <button
                   type="button"
                   class="text-blue-600 hover:text-blue-900 p-1"
-                  onclick={`editPerson('${persona.id}')`}
+                  onclick={`editPerson(\'${persona.id}\')`}
+                  title="Editar"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                   </svg>
                 </button>
                 <button
                   type="button"
                   class="text-red-600 hover:text-red-900 p-1"
-                  onclick={`deletePerson('${persona.id}', '${persona.nombres} ${persona.primer_apellido}')`}
+                  onclick={`deletePerson(\'${persona.id}\', \'${persona.nombres} ${persona.primer_apellido}\')`}
+                  title="Eliminar"
                 >
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                   </svg>
                 </button>
@@ -433,15 +450,28 @@ const errorMessage = Astro.url.searchParams.get("error");
             </div>
             
             <!-- Sede y escalas -->
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                {persona.sedes?.nombre_sede || 'N/A'}
-              </span>
-              {persona.escalas.map((escala: any) => (
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  {escala.nombre_escala}
+            <div class="mt-2 flex flex-wrap gap-1">
+              {persona.sedes ? (
+                <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
+                  {persona.sedes.nombre_sede}
                 </span>
-              ))}
+              ) : (
+                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                  Sin Sede
+                </span>
+              )}
+              
+              {persona.escalas && persona.escalas.length > 0 ? (
+                persona.escalas.map((escala) => (
+                  <span class="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
+                    {escala.nombre_escala}
+                  </span>
+                ))
+              ) : (
+                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                  Sin Escalas
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -449,12 +479,10 @@ const errorMessage = Astro.url.searchParams.get("error");
     ))}
   </div>
 
-  <!-- ====================================================== -->
-  <!-- MENSAJE CUANDO NO HAY RESULTADOS -->
-  <!-- ====================================================== -->
+  <!-- Mensaje de no hay resultados -->
   <div id="no-results" class="hidden text-center py-12">
     <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
     </svg>
     <h3 class="mt-2 text-sm font-medium text-gray-900">No se encontraron personas</h3>
     <p class="mt-1 text-sm text-gray-500">Intenta ajustar los filtros de búsqueda.</p>
@@ -463,233 +491,75 @@ const errorMessage = Astro.url.searchParams.get("error");
   <!-- ====================================================== -->
   <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
   <!-- ====================================================== -->
-  <div id="delete-modal" class="fixed inset-0 z-50 hidden overflow-y-auto">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-      <!-- Overlay -->
-      <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-      
-      <!-- Modal -->
-      <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-        <div class="sm:flex sm:items-start">
-          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-            </svg>
-          </div>
-          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">Eliminar persona</h3>
-            <div class="mt-2">
-              <p class="text-sm text-gray-500">
-                ¿Estás seguro de que quieres eliminar a <span id="delete-person-name" class="font-medium"></span>? 
-                Esta acción no se puede deshacer.
-              </p>
-            </div>
-          </div>
-        </div>
-        <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-          <button
-            type="button"
-            id="confirm-delete"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm transition-colors"
-          >
-            Eliminar
-          </button>
-          <button
-            type="button"
-            id="cancel-delete"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:mt-0 sm:w-auto sm:text-sm transition-colors"
-          >
-            Cancelar
-          </button>
-        </div>
+  <div
+    id="delete-modal"
+    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden flex items-center justify-center z-50"
+  >
+    <div class="bg-white p-8 rounded-lg shadow-xl max-w-sm mx-auto">
+      <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+        <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-900 mb-4 text-center">Confirmar Eliminación</h3>
+      <p class="text-sm text-gray-600 mb-6 text-center">
+        ¿Estás seguro de que deseas eliminar a <span id="delete-person-name" class="font-semibold"></span>? Esta acción no se puede deshacer.
+      </p>
+      <div class="flex justify-center gap-3">
+        <button
+          id="cancel-delete"
+          class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          id="confirm-delete"
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        >
+          Eliminar
+        </button>
       </div>
     </div>
   </div>
 
   <!-- ====================================================== -->
-  <!-- SCRIPTS PARA FUNCIONALIDAD -->
-  <!-- ====================================================== -->
-  <script define:vars={{ personas: personasConEscalas }}>
-    // Variables globales
-    let allPersonas = personas;
-    let filteredPersonas = personas;
-    let personToDelete = null;
+<!-- SCRIPTS EXTERNOS -->
+<!-- ====================================================== -->
+<script is:inline define:vars={{ personas: personasConEscalas }}>
+  // Pasar datos al contexto global
+  window.personasData = personas;
+</script>
 
-    // Inicializar la página
-    document.addEventListener('DOMContentLoaded', function() {
-      initializeFilters();
-      setupEventListeners();
-      updateStats();
-    });
+<!-- Cargar scripts externos (SIN is:inline) -->
+<script src="/scripts/personas-filters.js"></script>
+<script src="/scripts/personas-actions.js"></script>
 
-    // Configurar los filtros
-    function initializeFilters() {
-      // Llenar el select de sedes
-      const sedeFilter = document.getElementById('sede-filter');
-      const sedes = [...new Set(allPersonas.map(p => p.sedes?.nombre_sede).filter(Boolean))];
-      
-      sedes.forEach(sede => {
-        const option = document.createElement('option');
-        option.value = sede;
-        option.textContent = sede;
-        sedeFilter.appendChild(option);
-      });
+<!-- Inicializar la aplicación -->
+<script is:inline>
+  document.addEventListener("DOMContentLoaded", function() {
+    console.log("DOM cargado, inicializando...");
+    
+    // Verificar que los datos estén disponibles
+    if (window.personasData) {
+      console.log("Datos de personas disponibles:", window.personasData.length);
     }
-
-    // Configurar event listeners
-    function setupEventListeners() {
-      const searchInput = document.getElementById('search-input');
-      const sedeFilter = document.getElementById('sede-filter');
-      const clearFilters = document.getElementById('clear-filters');
-
-      // Búsqueda en tiempo real
-      searchInput.addEventListener('input', debounce(filterPersonas, 300));
-      sedeFilter.addEventListener('change', filterPersonas);
-      clearFilters.addEventListener('click', clearAllFilters);
-
-      // Modal de eliminación
-      const deleteModal = document.getElementById('delete-modal');
-      const confirmDelete = document.getElementById('confirm-delete');
-      const cancelDelete = document.getElementById('cancel-delete');
-
-      confirmDelete.addEventListener('click', confirmDeletePerson);
-      cancelDelete.addEventListener('click', closeDeleteModal);
-      
-      // Cerrar modal al hacer clic en el overlay
-      deleteModal.addEventListener('click', function(e) {
-        if (e.target === deleteModal) {
-          closeDeleteModal();
-        }
-      });
+    
+    // Inicializar filtros y acciones
+    if (typeof initializePersonasFilters === 'function') {
+      console.log("Llamando a initializePersonasFilters...");
+      initializePersonasFilters(window.personasData);
+    } else {
+      console.error("initializePersonasFilters no es una función");
     }
-
-    // Filtrar personas
-    function filterPersonas() {
-      const searchTerm = document.getElementById('search-input').value.toLowerCase();
-      const sedeFilter = document.getElementById('sede-filter').value;
-
-      filteredPersonas = allPersonas.filter(persona => {
-        const searchText = `${persona.nombres} ${persona.primer_apellido} ${persona.segundo_apellido} ${persona.numero_id}`.toLowerCase();
-        const matchesSearch = !searchTerm || searchText.includes(searchTerm);
-        const matchesSede = !sedeFilter || persona.sedes?.nombre_sede === sedeFilter;
-        
-        return matchesSearch && matchesSede;
-      });
-
-      updateDisplay();
-      updateStats();
+    
+    if (typeof initializePersonasActions === 'function') {
+      console.log("Llamando a initializePersonasActions...");
+      initializePersonasActions();
+    } else {
+      console.error("initializePersonasActions no es una función");
     }
+  });
+</script>
 
-    // Actualizar la visualización
-    function updateDisplay() {
-      // Mostrar/ocultar filas de la tabla
-      const tableRows = document.querySelectorAll('.persona-row');
-      const cards = document.querySelectorAll('.persona-card');
-      const noResults = document.getElementById('no-results');
-
-      let visibleCount = 0;
-
-      // Actualizar tabla
-      tableRows.forEach(row => {
-        const personId = row.querySelector('button[onclick*="viewPerson"]')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-        const isVisible = filteredPersonas.some(p => p.id === personId);
-        
-        if (isVisible) {
-          row.style.display = '';
-          visibleCount++;
-        } else {
-          row.style.display = 'none';
-        }
-      });
-
-      // Actualizar tarjetas
-      cards.forEach(card => {
-        const personId = card.querySelector('button[onclick*="viewPerson"]')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
-        const isVisible = filteredPersonas.some(p => p.id === personId);
-        
-        if (isVisible) {
-          card.style.display = '';
-        } else {
-          card.style.display = 'none';
-        }
-      });
-
-      // Mostrar mensaje de "no hay resultados"
-      if (visibleCount === 0) {
-        noResults.classList.remove('hidden');
-      } else {
-        noResults.classList.add('hidden');
-      }
-    }
-
-    // Actualizar estadísticas
-    function updateStats() {
-      document.getElementById('total-personas').textContent = allPersonas.length;
-      document.getElementById('personas-filtradas').textContent = filteredPersonas.length;
-    }
-
-    // Limpiar todos los filtros
-    function clearAllFilters() {
-      document.getElementById('search-input').value = '';
-      document.getElementById('sede-filter').value = '';
-      filteredPersonas = allPersonas;
-      updateDisplay();
-      updateStats();
-    }
-
-    // Funciones de acciones
-    window.viewPerson = function(personId) {
-      // Por ahora, redirigir a una página de detalles (a implementar)
-      window.location.href = `/personas/${personId}`;
-    };
-
-    window.editPerson = function(personId) {
-      // Redirigir a la página de edición (a implementar)
-      window.location.href = `/personas/${personId}/editar`;
-    };
-
-    window.deletePerson = function(personId, personName) {
-      personToDelete = personId;
-      document.getElementById('delete-person-name').textContent = personName;
-      document.getElementById('delete-modal').classList.remove('hidden');
-    };
-
-    function confirmDeletePerson() {
-      if (personToDelete) {
-        // Crear un formulario para enviar la eliminación
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/api/personas/${personToDelete}/delete`;
-        
-        // Añadir token CSRF si es necesario
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = '_method';
-        csrfInput.value = 'DELETE';
-        form.appendChild(csrfInput);
-        
-        document.body.appendChild(form);
-        form.submit();
-      }
-    }
-
-    function closeDeleteModal() {
-      document.getElementById('delete-modal').classList.add('hidden');
-      personToDelete = null;
-    }
-
-    // Utilidad para debounce
-    function debounce(func, wait) {
-      let timeout;
-      return function executedFunction(...args) {
-        const later = () => {
-          clearTimeout(timeout);
-          func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-      };
-    }
-  </script>
-</Layout>
+</LayoutProtected>
 
