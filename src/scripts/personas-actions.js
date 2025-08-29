@@ -1,4 +1,4 @@
-// src/scripts/personas-actions.js - VERSIÓN CORREGIDA PARA ASTRO
+// src/scripts/personas-actions.js - VERSIÓN CON EXPOSICIÓN GLOBAL CORREGIDA
 
 // Variable para almacenar el ID de la persona a eliminar
 let personToDelete = null;
@@ -7,8 +7,12 @@ let personToDelete = null;
  * Redirige a la página de detalles de una persona.
  * @param {string} personId - El ID de la persona.
  */
-export function viewPerson(personId) {
+function viewPerson(personId) {
   console.log("viewPerson llamada con ID:", personId);
+  if (!personId) {
+    console.error('ID de persona no válido');
+    return;
+  }
   window.location.href = `/personas/${personId}`;
 }
 
@@ -16,8 +20,12 @@ export function viewPerson(personId) {
  * Redirige a la página de edición de una persona.
  * @param {string} personId - El ID de la persona.
  */
-export function editPerson(personId) {
+function editPerson(personId) {
   console.log("editPerson llamada con ID:", personId);
+  if (!personId) {
+    console.error('ID de persona no válido');
+    return;
+  }
   window.location.href = `/personas/${personId}/editar`;
 }
 
@@ -26,8 +34,14 @@ export function editPerson(personId) {
  * @param {string} personId - El ID de la persona a eliminar.
  * @param {string} personName - El nombre completo de la persona a eliminar.
  */
-export function deletePerson(personId, personName) {
+function deletePerson(personId, personName) {
   console.log("deletePerson llamada con ID:", personId, "Nombre:", personName);
+  
+  if (!personId || !personName) {
+    console.error('Datos de persona no válidos');
+    return;
+  }
+  
   personToDelete = personId;
   const deletePersonNameSpan = document.getElementById("delete-person-name");
   const deleteModal = document.getElementById("delete-modal");
@@ -45,28 +59,32 @@ export function deletePerson(personId, personName) {
  */
 function confirmDeletePerson() {
   console.log("Confirmando eliminación para ID:", personToDelete);
-  if (personToDelete) {
-    // Usar fetch para llamar al endpoint de eliminación
-    fetch(`/api/personas/${personToDelete}/delete`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-    .then(response => {
-      if (response.ok) {
-        // Redirigir con mensaje de éxito
-        window.location.href = '/personas?success=' + encodeURIComponent('Persona eliminada correctamente');
-      } else {
-        // Redirigir con mensaje de error
-        window.location.href = '/personas?error=' + encodeURIComponent('Error al eliminar la persona<');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      window.location.href = '/personas?error=' + encodeURIComponent('Error de conexión al eliminar la persona');
-    });
+  
+  if (!personToDelete) {
+    console.error('No hay persona seleccionada para eliminar');
+    return;
   }
+
+  // Usar fetch para llamar al endpoint de eliminación
+  fetch(`/api/personas/${personToDelete}/delete`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => {
+    if (response.ok) {
+      // Redirigir con mensaje de éxito
+      window.location.href = '/personas?success=' + encodeURIComponent('Persona eliminada correctamente');
+    } else {
+      // Redirigir con mensaje de error
+      window.location.href = '/personas?error=' + encodeURIComponent('Error al eliminar la persona');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    window.location.href = '/personas?error=' + encodeURIComponent('Error de conexión al eliminar la persona');
+  });
 }
 
 /**
@@ -84,11 +102,22 @@ function closeDeleteModal() {
 /**
  * Maneja la respuesta de la API (mensajes de éxito/error).
  */
-export function handleApiResponse() {
+function handleApiResponse() {
   const urlParams = new URLSearchParams(window.location.search);
   const successMessage = urlParams.get("success");
   const errorMessage = urlParams.get("error");
-  const notificationContainer = document.getElementById("notification-container");
+  
+  // Buscar contenedor de notificaciones existente o crear uno
+  let notificationContainer = document.getElementById("notification-container");
+  
+  if (!notificationContainer) {
+    // Si no existe, crear uno al inicio del contenido principal
+    const mainContent = document.querySelector('main') || document.body;
+    notificationContainer = document.createElement('div');
+    notificationContainer.id = 'notification-container';
+    notificationContainer.className = 'mb-4';
+    mainContent.insertBefore(notificationContainer, mainContent.firstChild);
+  }
 
   if (notificationContainer) {
     notificationContainer.innerHTML = ""; // Limpiar notificaciones anteriores
@@ -121,10 +150,77 @@ export function handleApiResponse() {
 }
 
 /**
- * Inicializa los event listeners para las acciones de personas (modal de eliminación).
+ * Valida el formato de un número de identificación.
+ * @param {string} numeroId - El número de identificación a validar.
+ * @param {string} tipoId - El tipo de identificación.
+ * @returns {boolean} - True si es válido, false si no.
  */
-export function initializePersonasActions() {
+function validateIdNumber(numeroId, tipoId) {
+  if (!numeroId || !tipoId) return false;
+  
+  // Remover espacios y caracteres especiales
+  const cleanId = numeroId.replace(/\s+/g, '').replace(/[^\d]/g, '');
+  
+  switch (tipoId) {
+    case 'CC': // Cédula de Ciudadanía
+      // Debe tener entre 6 y 10 dígitos
+      return /^\d{6,10}$/.test(cleanId);
+    
+    case 'TI': // Tarjeta de Identidad
+      // Debe tener entre 8 y 11 dígitos
+      return /^\d{8,11}$/.test(cleanId);
+    
+    case 'CE': // Cédula de Extranjería
+      // Debe tener entre 6 y 10 dígitos
+      return /^\d{6,10}$/.test(cleanId);
+    
+    case 'PP': // Pasaporte
+      // Puede tener letras y números, entre 6 y 12 caracteres
+      return /^[A-Z0-9]{6,12}$/i.test(numeroId.replace(/\s+/g, ''));
+    
+    default:
+      return false;
+  }
+}
+
+/**
+ * Muestra un mensaje de validación para el campo de ID.
+ * @param {string} message - El mensaje a mostrar.
+ * @param {boolean} isError - Si es un mensaje de error o éxito.
+ */
+function showIdValidationMessage(message, isError = true) {
+  let messageContainer = document.getElementById('id-validation-message');
+  
+  if (!messageContainer) {
+    messageContainer = document.createElement('div');
+    messageContainer.id = 'id-validation-message';
+    messageContainer.className = 'mt-1 text-sm';
+    
+    // Buscar el campo de número de ID y agregar el mensaje después
+    const numeroIdField = document.getElementById('numero_id');
+    if (numeroIdField && numeroIdField.parentNode) {
+      numeroIdField.parentNode.insertBefore(messageContainer, numeroIdField.nextSibling);
+    }
+  }
+  
+  messageContainer.className = `mt-1 text-sm ${isError ? 'text-red-600' : 'text-green-600'}`;
+  messageContainer.textContent = message;
+  
+  // Auto-ocultar después de 3 segundos
+  setTimeout(() => {
+    if (messageContainer) {
+      messageContainer.textContent = '';
+    }
+  }, 3000);
+}
+
+/**
+ * Inicializa los event listeners para las acciones de personas.
+ */
+function initializePersonasActions() {
   console.log("Inicializando event listeners para acciones de personas...");
+  
+  // Event listeners para el modal de eliminación
   const confirmDelete = document.getElementById("confirm-delete");
   const cancelDelete = document.getElementById("cancel-delete");
   const deleteModal = document.getElementById("delete-modal");
@@ -153,6 +249,53 @@ export function initializePersonasActions() {
     }
   });
 
+  // Validación de ID en tiempo real (si estamos en un formulario)
+  const numeroIdField = document.getElementById('numero_id');
+  const tipoIdField = document.getElementById('tipo_id');
+  
+  if (numeroIdField && tipoIdField) {
+    function validateIdInRealTime() {
+      const numeroId = numeroIdField.value.trim();
+      const tipoId = tipoIdField.value;
+      
+      if (numeroId && tipoId) {
+        const isValid = validateIdNumber(numeroId, tipoId);
+        
+        if (isValid) {
+          numeroIdField.classList.remove('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
+          numeroIdField.classList.add('border-green-300', 'focus:border-green-500', 'focus:ring-green-500');
+          showIdValidationMessage('✓ Número de identificación válido', false);
+        } else {
+          numeroIdField.classList.remove('border-green-300', 'focus:border-green-500', 'focus:ring-green-500');
+          numeroIdField.classList.add('border-red-300', 'focus:border-red-500', 'focus:ring-red-500');
+          showIdValidationMessage('⚠ Formato de identificación inválido para el tipo seleccionado', true);
+        }
+      } else {
+        // Resetear estilos si no hay datos
+        numeroIdField.classList.remove(
+          'border-red-300', 'focus:border-red-500', 'focus:ring-red-500',
+          'border-green-300', 'focus:border-green-500', 'focus:ring-green-500'
+        );
+        const messageContainer = document.getElementById('id-validation-message');
+        if (messageContainer) {
+          messageContainer.textContent = '';
+        }
+      }
+    }
+    
+    numeroIdField.addEventListener('input', validateIdInRealTime);
+    tipoIdField.addEventListener('change', validateIdInRealTime);
+  }
+
   // Manejar mensajes de la API al cargar la página
   handleApiResponse();
+  
+  console.log("Event listeners inicializados correctamente");
 }
+
+// ✅ EXPOSICIÓN GLOBAL CORRECTA
+window.viewPerson = viewPerson;
+window.editPerson = editPerson;
+window.deletePerson = deletePerson;
+window.initializePersonasActions = initializePersonasActions;
+window.validateIdNumber = validateIdNumber;

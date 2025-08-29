@@ -77,7 +77,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     console.log("[API] Objeto persona construido:", personaData);
 
     // --- 5. VALIDACIÓN ---
-    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'email', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
+    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'email', 'url_foto', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
     
     for (const field of requiredFields) {
       if (!personaData[field as keyof typeof personaData]) {
@@ -134,8 +134,8 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       console.log("[API] Procesando ministerios:", ministeriosSeleccionados);
       
       const ministeriosData = ministeriosSeleccionados.map((ministerioId) => ({
-        persona_id: insertedPersona.id,
-        ministerio_id: ministerioId.toString(),
+        id_persona: insertedPersona.id,
+        id_ministerio: ministerioId.toString(),
       }));
 
       const { error: ministeriosError } = await supabase

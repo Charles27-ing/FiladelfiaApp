@@ -11,10 +11,10 @@ export const POST: APIRoute = async ({ request }) => {
   console.log("\n--- [API /api/id-checker] Petición POST recibida ---");
 
   try {
-    const { numeroId } = await request.json();
-    console.log(`[API] Verificando ID: ${numeroId}`);
+    const { numero_id } = await request.json();
+    console.log(`[API] Verificando ID: ${numero_id}`);
 
-    if (!numeroId) {
+    if (!numero_id) {
       console.log("[API] Error: numeroId no fue proporcionado.");
       return new Response(JSON.stringify({ message: "numeroId es requerido" }), { status: 400 });
     }
@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request }) => {
     const { data, error } = await supabaseAdmin
       .from('persona')
       .select('id')
-      .eq('numero_id', numeroId)
+      .eq('numero_id', numero_id)
       .single();
 
     if (error && error.code !== 'PGRST116') {

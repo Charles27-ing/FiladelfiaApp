@@ -1,41 +1,28 @@
 ---
 // src/pages/personas/nueva.astro
-import LayoutProtected from "@layouts/LayoutProtected.astro";
-import { supabase } from "@/lib/supabase";
+import LayoutProtected from "../../layouts/LayoutProtected.astro";
+import { supabase } from "../../lib/supabase";
 import type { Departamento } from "../../models/persona.model";
 
 // Cargar datos de Colombia (departamentos y municipios)
 import colombiaData from "../../data/colombia.json";
 const departamentos: Departamento[] = colombiaData.map((dept: any) => ({
-  id: dept.id.toString(),
-  nombre: dept.departamento,
-  ciudades: dept.ciudades.map((ciudad: string, index: number) => ({
-    id: `${dept.id}-${index}`,
-    nombre: ciudad
-  }))
+    id: dept.id.toString(),
+    nombre: dept.departamento,
+    ciudades: dept.ciudades.map((ciudad: string, index: number) => ({
+        id: `${dept.id}-${index}`,
+        nombre: ciudad,
+    })),
 }));
 
-// Obtener escalas de crecimiento
-const { data: escalas } = await supabase
-    .from("escala_de_crecimiento")
-    .select("id, nombre_escala")
-    .order("id", { ascending: true });
-
-// Obtener sedes
-const { data: sedes, error } = await supabase
-    .from("sedes")
-    .select("id, nombre_sede");
-
-// Obtener ministerios
-const { data: ministerios } = await supabase
-    .from("ministerios")
-    .select("id, nombre_minist")
-    .order("nombre_minist", { ascending: true });
+// Obtener escalas de crecimiento, sedes y ministerios
+const { data: escalas } = await supabase.from("escala_de_crecimiento").select("id, nombre_escala").order("id", { ascending: true });
+const { data: sedes, error } = await supabase.from("sedes").select("id, nombre_sede");
+const { data: ministerios } = await supabase.from("ministerios").select("id, nombre_minist").order("nombre_minist", { ascending: true });
 
 if (error) {
     console.error("Error al cargar las sedes:", error);
 }
-console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
 ---
 
 <LayoutProtected title="Registrar Nueva Persona">
@@ -45,7 +32,6 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
                 Registro de Nueva Persona
             </h1>
 
-            <!-- FORMULARIO COMPLETO -->
             <form
                 id="wizard-form"
                 method="POST"
@@ -53,286 +39,184 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
                 enctype="multipart/form-data"
                 class="space-y-8"
             >
-                <!-- PASO 1: VERIFICACIÓN DE ID -->
-                <div id="step-1" class="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-lg border border-green-200">
-                    <h2 class="text-xl font-semibold text-green-800 border-b border-green-300 pb-2 mb-4">
-                        Paso 1: Verificación de Identificación
-                    </h2>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                        <div class="md:col-span-2">
-                            <label for="numero_id" class="block mb-1 text-sm font-medium text-gray-700">
-                                Número de Identificación
-                            </label>
-                            <input
-                                type="text"
-                                id="numero_id"
-                                name="numero_id"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                                placeholder="Ingrese el número de identificación"
-                            />
-                        </div>
-                        <div>
-                            <button
-                                type="button"
-                                id="check-id-btn"
-                                class="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-                            >
-                                Verificar ID
-                            </button>
-                        </div>
-                    </div>
-                    <div id="id-status" class="mt-3 text-sm"></div>
-                </div>
-
-                <!-- INFORMACIÓN PERSONAL -->
-                <div id="step-personal" class="hidden bg-gradient-to-br from-gray-50 to-slate-100 p-6 rounded-lg border border-gray-200">
-                    <h2 class="text-xl font-semibold text-gray-800 border-b border-gray-300 pb-2 mb-6">
-                        Información Personal
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Tipo de Documento -->
-                        <div>
-                            <label for="tipo_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Tipo de Documento
-                            </label>
-                            <select
-                                id="tipo_id"
-                                name="tipo_id"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            >
-                                <option value="">Seleccione...</option>
-                                <option value="CC">Cédula de Ciudadanía</option>
-                                <option value="TI">Tarjeta de Identidad</option>
-                                <option value="CE">Cédula de Extranjería</option>
-                                <option value="RC">Registro Civil</option>
-                            </select>
-                        </div>
-
-                        <!-- Nombres -->
-                        <div>
-                            <label for="nombres" class="block text-sm font-medium text-gray-700 mb-1">
-                                Nombres
-                            </label>
-                            <input
-                                type="text"
-                                id="nombres"
-                                name="nombres"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Nombres completos"
-                            />
-                        </div>
-
-                        <!-- Primer Apellido -->
-                        <div>
-                            <label for="primer_apellido" class="block text-sm font-medium text-gray-700 mb-1">
-                                Primer Apellido
-                            </label>
-                            <input
-                                type="text"
-                                id="primer_apellido"
-                                name="primer_apellido"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Primer apellido"
-                            />
-                        </div>
-
-                        <!-- Segundo Apellido -->
-                        <div>
-                            <label for="segundo_apellido" class="block text-sm font-medium text-gray-700 mb-1">
-                                Segundo Apellido
-                            </label>
-                            <input
-                                type="text"
-                                id="segundo_apellido"
-                                name="segundo_apellido"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Segundo apellido (opcional)"
-                            />
-                        </div>
-
-                        <!-- Fecha de Nacimiento -->
-                        <div>
-                            <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-1">
-                                Fecha de Nacimiento
-                            </label>
-                            <input
-                                type="date"
-                                id="fecha_nacimiento"
-                                name="fecha_nacimiento"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            />
-                        </div>
-
-                        <!-- Género -->
-                        <div>
-                            <label for="genero" class="block text-sm font-medium text-gray-700 mb-1">
-                                Género
-                            </label>
-                            <select
-                                id="genero"
-                                name="genero"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            >
-                                <option value="">Seleccione...</option>
-                                <option value="Masculino">Masculino</option>
-                                <option value="Femenino">Femenino</option>
-                            </select>
-                        </div>
-
-                        <!-- Estado Civil -->
-                        <div>
-                            <label for="estado_civil" class="block text-sm font-medium text-gray-700 mb-1">
-                                Estado Civil
-                            </label>
-                            <select
-                                id="estado_civil"
-                                name="estado_civil"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                            >
-                                <option value="">Seleccione...</option>
-                                <option value="SOLTERO(A)">Soltero(a)</option>
-                                <option value="CASADO(A)">Casado(a)</option>
-                                <option value="UNION-LIBRE">Unión Libre</option>
-                                <option value="VIUDO(A)">Viudo(a)</option>
-                            </select>
-                        </div>
-
-                        <!-- Teléfono -->
-                        <div>
-                            <label for="telefono" class="block text-sm font-medium text-gray-700 mb-1">
-                                Teléfono
-                            </label>
-                            <input
-                                type="tel"
-                                id="telefono"
-                                name="telefono"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="Número de teléfono"
-                            />
-                        </div>
-
-                        <!-- Email -->
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                                Correo Electrónico
-                            </label>
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                placeholder="correo@ejemplo.com"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Ubicación -->
-                    <div class="mt-6">
-                        <h3 class="text-lg font-medium text-gray-800 mb-4">Ubicación</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <!-- Departamento -->
-                            <div>
-                                <label for="departamento" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Departamento
-                                </label>
-                                <select
-                                    id="departamento"
-                                    name="departamento"
-                                    required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                >
-                                    <option value="">Seleccione departamento...</option>
-                                    {departamentos.map((dept) => (
-                                        <option value={dept.nombre}>{dept.nombre}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <!-- Municipio -->
-                            <div>
-                                <label for="municipio" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Municipio
-                                </label>
-                                <select
-                                    id="municipio"
-                                    name="municipio"
-                                    required
-                                    disabled
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-                                >
-                                    <option value="">Seleccione municipio...</option>
-                                </select>
-                            </div>
-
-                            <!-- Dirección -->
-                            <div>
-                                <label for="direccion" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Dirección/Barrio
+                <!-- ================================================== -->
+                <!-- PASO 1: VERIFICACIÓN DE ID (Visible por defecto) -->
+                <!-- ================================================== -->
+                <div id="step-1">
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-lg border border-green-200">
+                        <h2 class="text-xl font-semibold text-green-800 border-b border-green-300 pb-2 mb-4">
+                            Paso 1: Verificación de Identificación
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                            <div class="md:col-span-2">
+                                <label for="numero_id" class="block mb-1 text-sm font-medium text-gray-700">
+                                    Número de Identificación
                                 </label>
                                 <input
                                     type="text"
-                                    id="direccion"
-                                    name="direccion"
+                                    id="numero_id"
+                                    name="numero_id"
                                     required
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                    placeholder="Dirección completa o barrio"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    placeholder="Ingrese el número de identificación"
                                 />
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Foto con Previsualización -->
-                    <div class="mt-6">
-                        <label for="foto" class="block text-sm font-medium text-gray-700 mb-2">
-                            Fotografía (opcional)
-                        </label>
-                        <div class="flex items-start space-x-4">
-                            <div class="flex-1">
-                                <input
-                                    type="file"
-                                    id="foto"
-                                    name="foto"
-                                    accept="image/*"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                                />
-                                <p class="mt-1 text-sm text-gray-500">
-                                    Formatos permitidos: JPG, PNG. Tamaño máximo: 5MB
-                                </p>
-                            </div>
-                            <!-- Previsualización de la imagen -->
-                            <div id="image-preview-container" class="hidden">
-                                <div class="w-24 h-24 border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50">
-                                    <img id="image-preview" src="" alt="Vista previa" class="w-full h-full object-cover">
-                                </div>
-                                <button type="button" id="remove-image" class="mt-2 text-xs text-red-600 hover:text-red-800">
-                                    Quitar imagen
+                            <div>
+                                <button
+                                    type="button"
+                                    id="check-id-btn"
+                                    class="w-full px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md"
+                                >
+                                    Verificar ID
                                 </button>
                             </div>
                         </div>
+                        <div id="id-status" class="mt-3 text-sm"></div>
+                    </div>
+                    <!-- Botón Siguiente solo para el Paso 1 -->
+                    <div class="flex justify-end pt-6 border-t border-gray-200 mt-8">
+                         <button type="button" id="next-btn" class="hidden px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md">
+                            Siguiente
+                        </button>
                     </div>
                 </div>
 
-                <!-- INFORMACIÓN DE LA IGLESIA -->
-                <div id="step-church" class="hidden bg-gradient-to-br from-emerald-50 to-green-100 p-6 rounded-lg border border-emerald-200">
-                    <h2 class="text-xl font-semibold text-emerald-800 border-b border-emerald-300 pb-2 mb-6">
-                        Información de la Iglesia
-                    </h2>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Sede -->
-                        <div>
-                            <label for="sede_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Sede
+                <!-- ================================================== -->
+                <!-- PASO 2: FORMULARIO COMPLETO (Oculto por defecto) -->
+                <!-- ================================================== -->
+                <div id="step-2" class="hidden space-y-8">
+                    <!-- SECCIÓN: INFORMACIÓN PERSONAL BÁSICA -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-100 p-6 rounded-lg border border-blue-200">
+                        <h2 class="text-xl font-semibold text-blue-800 border-b border-blue-300 pb-2 mb-6">
+                            📋 Información Personal Básica
+                        </h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Columna izquierda: Campos de información -->
+                            <div class="lg:col-span-2 space-y-4">
+                                <!-- ... (Todos los campos de texto: tipo_id, nombres, apellidos, etc.) ... -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="tipo_id" class="block mb-1 text-sm font-medium text-gray-700">Tipo de Documento *</label>
+                                        <select id="tipo_id" name="tipo_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Seleccionar...</option>
+                                            <option value="CC">Cédula ciudadana</option>
+                                            <option value="TI">Tarjeta de identidad</option>
+                                            <option value="CE">Cédula de extranjería</option>
+                                            <option value="PP">Pasaporte</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="nombres" class="block mb-1 text-sm font-medium text-gray-700">Nombres Completos *</label>
+                                        <input type="text" id="nombres" name="nombres" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Nombres"/>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="primer_apellido" class="block mb-1 text-sm font-medium text-gray-700">Primer Apellido *</label>
+                                        <input type="text" id="primer_apellido" name="primer_apellido" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Primer apellido"/>
+                                    </div>
+                                    <div>
+                                        <label for="segundo_apellido" class="block mb-1 text-sm font-medium text-gray-700">Segundo Apellido</label>
+                                        <input type="text" id="segundo_apellido" name="segundo_apellido" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Segundo apellido"/>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="genero" class="block mb-1 text-sm font-medium text-gray-700">Género *</label>
+                                        <select id="genero" name="genero" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Seleccionar...</option>
+                                            <option value="Masculino">Masculino</option>
+                                            <option value="Femenino">Femenino</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="fecha_nacimiento" class="block mb-1 text-sm font-medium text-gray-700">Fecha de Nacimiento *</label>
+                                        <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="edad" class="block mb-1 text-sm font-medium text-gray-700">Edad (calculada)</label>
+                                    <input type="number" id="edad" name="edad" readonly class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 cursor-not-allowed" placeholder="Se calculará automáticamente"/>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="estado_civil" class="block mb-1 text-sm font-medium text-gray-700">Estado Civil *</label>
+                                        <select id="estado_civil" name="estado_civil" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            <option value="">Seleccionar...</option>
+                                            <option value="SOLTERO(A)">Soltero(a)</option>
+                                            <option value="CASADO(A)">Casado(a)</option>
+                                            <option value="UNION-LIBRE">Unión Libre</option>
+                                            <option value="VIUDO(A)">Viudo(a)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="telefono" class="block mb-1 text-sm font-medium text-gray-700">Teléfono *</label>
+                                        <input type="tel" id="telefono" name="telefono" required pattern="[0-9]{7,10}" title="Ingrese solo números (7 a 10 dígitos)" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="3001234567"/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="email" class="block mb-1 text-sm font-medium text-gray-700">Correo Electrónico (Opcional)</label>
+                                    <input type="email" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="correo@ejemplo.com"/>
+                                </div>
+                            </div>
+                            <!-- Columna derecha: Foto -->
+                            <div class="lg:col-span-1">
+                                <div class="bg-gray-100 rounded-lg p-4 h-full flex flex-col items-center justify-center min-h-[400px]">
+                                    <div id="image-preview-container" class="w-40 h-40 bg-gray-300 rounded-full flex items-center justify-center mb-4 overflow-hidden">
+                                        <svg id="default-avatar" class="w-20 h-20 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        <img id="image-preview" src="" alt="Vista previa" class="w-full h-full object-cover hidden">
+                                    </div>
+                                    <div class="w-full space-y-3">
+                                        <div>
+                                            <label for="foto_archivo" class="block mb-2 text-sm font-medium text-gray-700 text-center">Subir desde dispositivo</label>
+                                            <input type="file" id="foto_archivo" name="foto" accept="image/*" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"/>
+                                            <p class="mt-1 text-xs text-gray-500 text-center">JPG, PNG (máx. 5MB)</p>
+                                        </div>
+                                        <div class="text-center text-sm text-gray-500"><span>o</span></div>
+                                        <div>
+                                            <label for="url_foto" class="block mb-2 text-sm font-medium text-gray-700 text-center">URL de imagen</label>
+                                            <input type="url" id="url_foto" name="url_foto" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://ejemplo.com/imagen.jpg"/>
+                                        </div>
+                                        <button type="button" id="remove-image" class="w-full px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm hidden">Quitar imagen</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN: UBICACIÓN -->
+                    <div class="bg-gradient-to-br from-purple-50 to-violet-100 p-6 rounded-lg border border-purple-200">
+                        <h2 class="text-xl font-semibold text-purple-800 border-b border-purple-300 pb-2 mb-6">
+                            📍 Ubicación
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="departamento" class="block mb-1 text-sm font-medium text-gray-700">Departamento *</label>
+                                <select id="departamento" name="departamento" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Seleccione departamento...</option>
+                                    {departamentos.map((dept ) => (<option value={dept.nombre}>{dept.nombre}</option>))}
+                                </select>
+                            </div>
+                            <div>
+                                <label for="municipio" class="block mb-1 text-sm font-medium text-gray-700">Municipio *</label>
+                                <select id="municipio" name="municipio" required disabled class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100">
+                                    <option value="">Seleccione municipio...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="direccion" class="block mb-1 text-sm font-medium text-gray-700">Dirección/Barrio *</label>
+                            <input type="text" id="direccion" name="direccion" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Dirección completa o barrio"/>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN: INFORMACIÓN DE LA IGLESIA -->
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-100 p-6 rounded-lg border border-green-200">
+                        <h2 class="text-xl font-semibold text-green-800 border-b border-green-300 pb-2 mb-6">
+                            ⛪ Información de la Iglesia
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
                             </label>
                             <select
                                 id="sede_id"
@@ -345,104 +229,40 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
                                     <option value={sede.id}>{sede.nombre_sede}</option>
                                 ))}
                             </select>
-                        </div>
-
-                        <!-- Estado de Bautismo -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-3">
-                                Estado de Bautismo
-                            </label>
-                            <div class="flex space-x-6">
-                                <label class="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="bautizado"
-                                        value="true"
-                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700">Sí, está bautizado</span>
-                                </label>
-                                <label class="flex items-center">
-                                    <input
-                                        type="radio"
-                                        name="bautizado"
-                                        value="false"
-                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300"
-                                    />
-                                    <span class="ml-2 text-sm text-gray-700">No está bautizado</span>
-                                </label>
+                            </div>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-gray-700">¿Está Bautizado? *</label>
+                                <div class="flex items-center space-x-4">
+                                    <label class="inline-flex items-center"><input type="radio" name="bautizado" value="true" class="form-radio text-green-600" required /><span class="ml-2 text-gray-700">Sí</span></label>
+                                    <label class="inline-flex items-center"><input type="radio" name="bautizado" value="false" class="form-radio text-red-600" required /><span class="ml-2 text-gray-700">No</span></label>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="escala_crecimiento" class="block mb-1 text-sm font-medium text-gray-700">Escala de Crecimiento *</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                                    {escalas && escalas.map((escala) => (
+                                        <label class="inline-flex items-center"><input type="checkbox" name="escalas" value={escala.id} class="form-checkbox text-green-600"/><span class="ml-2 text-gray-700 text-sm">{escala.nombre_escala}</span></label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="block mb-2 text-sm font-medium text-gray-700">Ministerios (puede seleccionar varios)</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-md p-3">
+                                    {ministerios && ministerios.map((ministerio) => (
+                                        <label class="inline-flex items-center"><input type="checkbox" name="ministerios" value={ministerio.id} class="form-checkbox text-green-600"/><span class="ml-2 text-gray-700 text-sm">{ministerio.nombre_minist}</span></label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Escalas de Crecimiento -->
-                    <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
-                            Escalas de Crecimiento
-                        </label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {escalas && escalas.map((escala) => (
-                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                                    <input
-                                        type="checkbox"
-                                        name="escalas"
-                                        value={escala.id}
-                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                                    />
-                                    <span class="ml-3 text-sm text-gray-700">{escala.nombre_escala}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    <!-- Ministerios -->
-                    <div class="mt-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
-                            Ministerios
-                        </label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {ministerios && ministerios.map((ministerio) => (
-                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                                    <input
-                                        type="checkbox"
-                                        name="ministerios"
-                                        value={ministerio.id}
-                                        class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                                    />
-                                    <span class="ml-3 text-sm text-gray-700">{ministerio.nombre_minist}</span>
-                                </label>
-                            ))}
-                        </div>
-                        <p class="mt-2 text-sm text-gray-500">
-                            Puede seleccionar todos los ministerios en los que participa.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- BOTONES DE NAVEGACIÓN -->
-                <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-                    <button
-                        type="button"
-                        id="prev-btn"
-                        class="hidden px-6 py-2 bg-gradient-to-r from-gray-500 to-slate-500 text-white rounded-md hover:from-gray-600 hover:to-slate-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-                    >
-                        Anterior
-                    </button>
-                    
-                    <div class="flex space-x-4">
-                        <button
-                            type="button"
-                            id="next-btn"
-                            class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-                        >
-                            Siguiente
+                    <!-- BOTONES DE NAVEGACIÓN Y ENVÍO PARA EL PASO 2 -->
+                    <div class="flex justify-between items-center pt-6 border-t border-gray-200">
+                        <button type="button" id="prev-btn" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 shadow-md">
+                            Anterior
                         </button>
-                        <button
-                            type="submit"
-                            id="submit-btn"
-                            class="hidden px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-md hover:from-emerald-700 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-                        >
-                            Guardar Persona
+                        <button type="submit" id="submit-btn" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-md">
+                            Registrar Persona
                         </button>
                     </div>
                 </div>
@@ -450,124 +270,92 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
         </div>
     </div>
 
-    <!-- Script para manejar la lógica del formulario -->
-    <script is:inline define:vars={{ departamentos }}>
-        // Pasar datos de departamentos al contexto global
-        window.departamentosData = departamentos;
-    </script>
-    
-    <script is:inline>
+    <!-- SCRIPT SIMPLIFICADO PARA DOS PASOS -->
+    <script define:vars={{ departamentos }} is:inline>
         document.addEventListener('DOMContentLoaded', function() {
-            // Variables del DOM
+            // --- VARIABLES DEL DOM ---
             const step1 = document.getElementById('step-1');
-            const stepPersonal = document.getElementById('step-personal');
-            const stepChurch = document.getElementById('step-church');
+            const step2 = document.getElementById('step-2');
+            
             const checkIdBtn = document.getElementById('check-id-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const prevBtn = document.getElementById('prev-btn');
-            const submitBtn = document.getElementById('submit-btn');
-            const idStatus = document.getElementById('id-status');
             const numeroIdInput = document.getElementById('numero_id');
-            const departamentoSelect = document.getElementById('departamento');
-            const municipioSelect = document.getElementById('municipio');
+            const idStatus = document.getElementById('id-status');
+            
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const submitBtn = document.getElementById('submit-btn');
 
-            let currentStep = 1;
-            let idVerified = false;
+            // --- LÓGICA DE NAVEGACIÓN ---
+            nextBtn.addEventListener('click', function() {
+                // Oculta el paso 1 y muestra el paso 2
+                step1.classList.add('hidden');
+                step2.classList.remove('hidden');
+            });
 
-            // Función para verificar ID
+            prevBtn.addEventListener('click', function() {
+                // Oculta el paso 2 y muestra el paso 1
+                step2.classList.add('hidden');
+                step1.classList.remove('hidden');
+                // Opcional: Ocultar 'Siguiente' de nuevo para forzar reverificación
+                nextBtn.classList.add('hidden');
+                idStatus.innerHTML = `<span class="text-blue-600">Por favor, verifique el ID nuevamente.</span>`;
+            });
+
+            // --- VERIFICACIÓN DE ID ---
             checkIdBtn.addEventListener('click', async function() {
                 const numeroId = numeroIdInput.value.trim();
-                
                 if (!numeroId) {
-                    showIdStatus('Por favor ingrese un número de identificación.', 'error');
+                    idStatus.innerHTML = `<span class="text-red-600">⚠ Por favor ingrese un número de identificación</span>`;
                     return;
                 }
 
                 try {
+                    idStatus.innerHTML = `<span class="text-blue-600">🔍 Verificando...</span>`;
                     const response = await fetch('/api/id-checker', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ numero_id: numeroId }),
                     });
-
                     const result = await response.json();
 
                     if (result.exists) {
-                        showIdStatus('Este número de identificación ya está registrado.', 'error');
-                        idVerified = false;
+                        idStatus.innerHTML = `<span class="text-red-600">Este ID ya está registrado. Por favor, use uno diferente.</span>`;
+                        nextBtn.classList.add('hidden');
                     } else {
-                        showIdStatus('✓ Número de identificación disponible. Puede continuar.', 'success');
-                        idVerified = true;
-                        nextBtn.disabled = false;
+                        idStatus.innerHTML = `<span class="text-green-600">✅ ID disponible. Haga clic en "Siguiente" para continuar.</span>`;
+                        nextBtn.classList.remove('hidden'); // Mostrar botón "Siguiente"
                     }
                 } catch (error) {
-                    console.error('Error al verificar ID:', error);
-                    showIdStatus('Error al verificar el ID. Intente nuevamente.', 'error');
-                    idVerified = false;
-                }
-            });
-
-            // Función para mostrar estado del ID
-            function showIdStatus(message, type) {
-                idStatus.innerHTML = `
-                    <div class="p-3 rounded-md ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
-                        ${message}
-                    </div>
-                `;
-            }
-
-            // Navegación entre pasos
-            nextBtn.addEventListener('click', function() {
-                if (currentStep === 1 && !idVerified) {
-                    showIdStatus('Debe verificar el número de identificación primero.', 'error');
-                    return;
-                }
-
-                if (currentStep === 1) {
-                    // Ir al paso de información personal
-                    step1.classList.add('hidden');
-                    stepPersonal.classList.remove('hidden');
-                    prevBtn.classList.remove('hidden');
-                    currentStep = 2;
-                } else if (currentStep === 2) {
-                    // Ir al paso de información de la iglesia
-                    stepPersonal.classList.add('hidden');
-                    stepChurch.classList.remove('hidden');
+                    idStatus.innerHTML = `<span class="text-red-600">Error al verificar el ID. Intente nuevamente.</span>`;
                     nextBtn.classList.add('hidden');
-                    submitBtn.classList.remove('hidden');
-                    currentStep = 3;
                 }
             });
-
-            prevBtn.addEventListener('click', function() {
-                if (currentStep === 2) {
-                    // Volver al paso 1
-                    stepPersonal.classList.add('hidden');
-                    step1.classList.remove('hidden');
-                    prevBtn.classList.add('hidden');
-                    currentStep = 1;
-                } else if (currentStep === 3) {
-                    // Volver al paso 2
-                    stepChurch.classList.add('hidden');
-                    stepPersonal.classList.remove('hidden');
-                    nextBtn.classList.remove('hidden');
-                    submitBtn.classList.add('hidden');
-                    currentStep = 2;
-                }
+            
+            // --- FUNCIONALIDAD DEL FORMULARIO (sin cambios) ---
+            const fechaNacimientoInput = document.getElementById('fecha_nacimiento');
+            const edadInput = document.getElementById('edad');
+            fechaNacimientoInput.addEventListener("change", function() {
+                const dob = new Date(this.value);
+                const today = new Date();
+                let age = today.getFullYear() - dob.getFullYear();
+                const m = today.getMonth() - dob.getMonth();
+                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                edadInput.value = age >= 0 ? age.toString() : "";
             });
 
-            // Lógica para departamento/municipio
+            const telefonoInput = document.getElementById('telefono');
+            telefonoInput.addEventListener("input", function() { this.value = this.value.replace(/[^0-9]/g, "").slice(0, 10); });
+
+            const departamentoSelect = document.getElementById('departamento');
+            const municipioSelect = document.getElementById('municipio');
             departamentoSelect.addEventListener('change', function() {
                 const selectedDept = this.value;
                 municipioSelect.innerHTML = '<option value="">Seleccione municipio...</option>';
                 municipioSelect.disabled = true;
-
-                if (selectedDept && window.departamentosData) {
-                    const departamento = window.departamentosData.find(d => d.nombre === selectedDept);
-                    if (departamento && departamento.ciudades) {
-                        departamento.ciudades.forEach(ciudad => {
+                if (selectedDept) {
+                    const dept = departamentos.find(d => d.nombre === selectedDept);
+                    if (dept && dept.ciudades) {
+                        dept.ciudades.forEach(ciudad => {
                             const option = document.createElement('option');
                             option.value = ciudad.nombre;
                             option.textContent = ciudad.nombre;
@@ -578,47 +366,53 @@ console.log("[Página nueva.astro] Sedes recibidas del servidor:", sedes);
                 }
             });
 
-            // Lógica de previsualización de imagen
-            const fotoInput = document.getElementById('foto');
-            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const fotoArchivoInput = document.getElementById('foto_archivo');
+            const urlFotoInput = document.getElementById('url_foto');
             const imagePreview = document.getElementById('image-preview');
+            const defaultAvatar = document.getElementById('default-avatar');
             const removeImageBtn = document.getElementById('remove-image');
+            
+            function showImagePreview(src) {
+                imagePreview.src = src;
+                imagePreview.classList.remove('hidden');
+                defaultAvatar.classList.add('hidden');
+                removeImageBtn.classList.remove('hidden');
+            }
 
-            fotoInput.addEventListener('change', function(e) {
+            function hideImagePreview() {
+                imagePreview.src = '';
+                imagePreview.classList.add('hidden');
+                defaultAvatar.classList.remove('hidden');
+                removeImageBtn.classList.add('hidden');
+            }
+
+            fotoArchivoInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    // Validar tamaño (5MB máximo)
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('El archivo es demasiado grande. El tamaño máximo es 5MB.');
-                        fotoInput.value = '';
-                        return;
-                    }
-
-                    // Validar tipo de archivo
-                    if (!file.type.startsWith('image/')) {
-                        alert('Por favor seleccione un archivo de imagen válido.');
-                        fotoInput.value = '';
-                        return;
-                    }
-
-                    // Mostrar previsualización
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        imagePreview.src = e.target.result;
-                        imagePreviewContainer.classList.remove('hidden');
-                    };
+                    reader.onload = (e) => { showImagePreview(e.target.result); urlFotoInput.value = ''; };
                     reader.readAsDataURL(file);
                 }
             });
 
-            removeImageBtn.addEventListener('click', function() {
-                fotoInput.value = '';
-                imagePreview.src = '';
-                imagePreviewContainer.classList.add('hidden');
+            urlFotoInput.addEventListener('input', function() {
+                const url = this.value.trim();
+                if (url) { showImagePreview(url); fotoArchivoInput.value = ''; } 
+                else if (!fotoArchivoInput.files[0]) { hideImagePreview(); }
             });
 
-            // Los ministerios ya no tienen límite - se eliminó la validación de máximo 2
+            removeImageBtn.addEventListener('click', function() {
+                hideImagePreview();
+                fotoArchivoInput.value = '';
+                urlFotoInput.value = '';
+            });
+
+            const form = document.getElementById('wizard-form');
+            form.addEventListener('submit', function(e) {
+                // Deshabilitar botón para evitar doble envío
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Registrando...';
+            });
         });
     </script>
 </LayoutProtected>
-
