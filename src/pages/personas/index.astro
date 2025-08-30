@@ -26,12 +26,21 @@ interface Persona {
   tipo_id: string;
   email: string;
   telefono: string;
+  direccion: string;
   url_foto: string | null;
+  bautizado: boolean;
   sedes: Sede | null;
   persona_escala: { escala_de_crecimiento: Escala }[];
+  // Nuevos campos
+  fecha_nacimiento: string;
+  edad: number;
+  genero: string;
+  estado_civil: string;
+  departamento: string;
+  municipio: string;
 }
 
-// CONSULTA: Usar left joins para incluir personas sin escalas
+// CONSULTA: Incluir el campo bautizado y los nuevos campos
 const { data, error } = await supabase
   .from("persona")
   .select(`
@@ -43,7 +52,15 @@ const { data, error } = await supabase
     tipo_id,
     email,
     telefono,
+    direccion,
     url_foto,
+    bautizado,
+    fecha_nacimiento,
+    edad,
+    genero,
+    estado_civil,
+    departamento,
+    municipio,
     sedes(id, nombre_sede, codigo),
     persona_escala(
       escala_de_crecimiento(id, nombre_escala)
@@ -60,7 +77,7 @@ if (error) {
 }
 
 // Debug: Mostrar cuántas personas se cargaron
-console.log(`[DEBUG] Personas cargadas: ${personas.length}`);
+console.log(`[DEBUG] Personas cargadiñas: ${personas.length}`);
 
 // Procesar los datos para agrupar las escalas por persona
 const personasConEscalas = personas.map(persona => ({

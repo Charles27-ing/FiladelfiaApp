@@ -61,6 +61,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       tipo_id: formData.get('tipo_id')?.toString(),
       numero_id: formData.get('numero_id')?.toString(),
       fecha_nacimiento: formData.get('fecha_nacimiento')?.toString(),
+      edad: formData.get('edad')?.toString(),
       genero: formData.get('genero')?.toString(),
       telefono: formData.get('telefono')?.toString(),
       email: formData.get('email')?.toString(),
@@ -132,10 +133,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const ministeriosSeleccionados = formData.getAll('ministerios');
     if (ministeriosSeleccionados.length > 0) {
       console.log("[API] Procesando ministerios:", ministeriosSeleccionados);
-      
+      //aqui agrega los ministerios
       const ministeriosData = ministeriosSeleccionados.map((ministerioId) => ({
-        persona_id: insertedPersona.id,
-        ministerio_id: ministerioId.toString(),
+        id_persona: insertedPersona.id,
+        id_ministerio: ministerioId.toString(),
       }));
 
       const { error: ministeriosError } = await supabase
