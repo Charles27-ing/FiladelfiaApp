@@ -61,7 +61,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       tipo_id: formData.get('tipo_id')?.toString(),
       numero_id: formData.get('numero_id')?.toString(),
       fecha_nacimiento: formData.get('fecha_nacimiento')?.toString(),
-      edad: formData.get('edad')?.toString(),
       genero: formData.get('genero')?.toString(),
       telefono: formData.get('telefono')?.toString(),
       email: formData.get('email')?.toString(),
@@ -78,7 +77,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     console.log("[API] Objeto persona construido:", personaData);
 
     // --- 5. VALIDACIÓN ---
-    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'email', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
+    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'email', 'url_foto', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
     
     for (const field of requiredFields) {
       if (!personaData[field as keyof typeof personaData]) {
@@ -155,7 +154,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     console.log("[API] Proceso completado exitosamente");
     
     // Redirigir al listado de personas con mensaje de éxito
-    return redirect('/personas?success=' + encodeURIComponent('Persona registrada exitosamente'));
+    return redirect('/personas?success=' + encodeURIComponent('Persona registrada exitosamente ✅'));
 
   } catch (error) {
     console.error("[API] Error inesperado:", error);

@@ -2,7 +2,7 @@
 export function initializePersonaWizard() {
   // --- Elementos del DOM ---
   const form = document.getElementById('wizard-form') as HTMLFormElement;
-   const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement; // Botón de Guardar
+  const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement; // Botón de Guardar
   const validationErrorDiv = document.getElementById('validation-error');
   const step1 = document.getElementById('step-1');
   const verifyInput = document.getElementById('numero_id') as HTMLInputElement;

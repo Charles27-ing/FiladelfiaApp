@@ -7,6 +7,7 @@ export interface Persona {
   tipo_id: string;
   numero_id: string;
   fecha_nacimiento: string;
+  edad?: string;
   genero: string;
   telefono: string;
   email: string;
@@ -30,6 +31,7 @@ export interface NuevaPersona {
   tipo_id: string;
   numero_id: string;
   fecha_nacimiento: string;
+  edad?: string;
   genero: string;
   telefono: string;
   email: string;

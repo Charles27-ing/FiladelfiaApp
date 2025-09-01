@@ -1,9 +1,16 @@
 ---
-// src/pages/personas/index.astro - VERSIÓN CORREGIDA PARA ASTRO
+// src/pages/personas/[id].astro - Página de detalles de persona (VERSIÓN CORREGIDA)
 import LayoutProtected from "@layouts/LayoutProtected.astro";
 import { supabase } from "@lib/supabase";
 
-// Definir interfaces para los tipos de datos
+// Obtener el ID de la persona desde la URL
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/personas?error=' + encodeURIComponent('ID de persona no válido'));
+}
+
+// Definir interfaces
 interface Sede {
   id: string;
   nombre_sede: string;
@@ -13,7 +20,12 @@ interface Sede {
 interface Escala {
   id: string;
   nombre_escala: string;
- }
+}
+
+interface Ministerio {
+  id: string;
+  nombre_minist: string;
+}
 
 interface Persona {
   id: string;
@@ -24,14 +36,22 @@ interface Persona {
   tipo_id: string;
   email: string;
   telefono: string;
+  direccion: string;
   url_foto: string | null;
-  sedes: Sede | null; // Puede ser null si no hay sede o el join falla
-  persona_escala: { escala_de_crecimiento: Escala }[]; // Array de objetos con la escala anidada
-  // Añade aquí cualquier otra propiedad de tu tabla persona
+  bautizado: boolean;
+  fecha_nacimiento: string;
+  genero: string;
+  estado_civil: string;
+  departamento: string;
+  municipio: string;
+  created_at: string;
+  sedes: Sede | null;
+  persona_escala: { escala_de_crecimiento: Escala }[];
+  persona_ministerios: { ministerios: Ministerio }[];
 }
 
-// CONSULTA: Usar left joins para incluir personas sin escalas
-const { data, error } = await supabase
+// Consultar los datos de la persona específica
+const { data: personaData, error } = await supabase
   .from("persona")
   .select(`
     id,
@@ -42,191 +62,297 @@ const { data, error } = await supabase
     tipo_id,
     email,
     telefono,
+    direccion,
     url_foto,
+    bautizado,
+    fecha_nacimiento,
+    genero,
+    estado_civil,
+    departamento,
+    municipio,
+    created_at,
     sedes(id, nombre_sede, codigo),
     persona_escala(
       escala_de_crecimiento(id, nombre_escala)
+    ),
+    persona_ministerios(
+      ministerios(id, nombre_minist)
     )
   `)
-  .order("created_at", { ascending: false });
+  .eq('id', id)
+  .single();
 
-// Asegurarse de que `data` es un array de Persona o un array vacío
-const personas: Persona[] = (data as Persona[] | null) || [];
-
-if (error) {
-  console.error("Error al cargar personas:", error);
-  console.error("Detalles del error:", error.message, error.details, error.hint);
+if (error || !personaData) {
+  console.error("Error al cargar persona:", error);
+  return Astro.redirect('/personas?error=' + encodeURIComponent('Persona no encontrada'));
 }
 
-// Debug: Mostrar cuántas personas se cargaron
-console.log(`[DEBUG] Personas cargadas: ${personas.length}`);
+const persona = personaData as Persona;
 
-// Procesar los datos para agrupar las escalas por persona
-const personasConEscalas = personas.map(persona => ({
-  ...persona,
-  escalas: persona.persona_escala
-    ?.map(pe => pe.escala_de_crecimiento)
-    .filter((escala): escala is Escala => escala !== null) || [] // Asegurar que escala no es null
-})) || [];
+// Procesar escalas y ministerios
+const escalas = persona.persona_escala
+  ?.map(pe => pe.escala_de_crecimiento)
+  .filter((escala): escala is Escala => escala !== null) || [];
 
-console.log(`[DEBUG] Personas procesadas: ${personasConEscalas.length}`);
+const ministerios = persona.persona_ministerios
+  ?.map(pm => pm.ministerios)
+  .filter((ministerio): ministerio is Ministerio => ministerio !== null) || [];
+
+// Formatear fecha de nacimiento
+const fechaNacimientoFormateada = persona.fecha_nacimiento 
+  ? new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  : 'No especificada';
+
+// Formatear fecha de registro
+const fechaRegistroFormateada = persona.created_at
+  ? new Date(persona.created_at).toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  : 'No disponible';
 
 // Obtener mensajes de éxito/error de la URL
 const successMessage = Astro.url.searchParams.get("success");
 const errorMessage = Astro.url.searchParams.get("error");
 ---
 
-<LayoutProtected title="Gestión de Personas">
+<LayoutProtected title={`${persona.nombres} ${persona.primer_apellido}`}>
   <!-- ====================================================== -->
   <!-- NOTIFICACIONES -->
   <!-- ====================================================== -->
   {successMessage && (
-    <div
-      class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4"
-      role="alert"
-    >
-      <strong class="font-bold">Éxito!</strong>
-      <span class="block sm:inline"> {decodeURIComponent(successMessage)}</span>
+    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+      <strong class="font-bold">¡Éxito!</strong>
+      <span class="block sm:inline">{successMessage}</span>
     </div>
   )}
+
   {errorMessage && (
-    <div
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-      role="alert"
-    >
-      <strong class="font-bold">Error!</strong>
-      <span class="block sm:inline"> {decodeURIComponent(errorMessage)}</span>
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+      <strong class="font-bold">¡Error!</strong>
+      <span class="block sm:inline">{errorMessage}</span>
     </div>
   )}
 
   <!-- ====================================================== -->
-  <!-- HEADER DE LA PÁGINA -->
+  <!-- NAVEGACIÓN -->
   <!-- ====================================================== -->
-  <div class="sm:flex sm:items-center sm:justify-between mb-8">
-    <div>
-      <h1 class="text-2xl font-bold leading-6 text-gray-900">Directorio de Personas</h1>
-      <p class="mt-2 text-sm text-gray-700">
-        Gestiona la información de los miembros y visitantes de la congregación
-      </p>
-    </div>
-  </div>
-
-  <!-- ====================================================== -->
-  <!-- BARRA DE BÚSQUEDA Y FILTROS -->
-  <!-- ====================================================== -->
-  <div class="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <!-- Búsqueda por texto -->
-      <div class="sm:col-span-2">
-        <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">
-          Buscar persona
-        </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+  <div class="mb-6">
+    <nav class="flex" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="/personas" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-blue-600">
+            <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/>
             </svg>
+            Directorio de Personas
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">
+              {persona.nombres} {persona.primer_apellido}
+            </span>
           </div>
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Buscar por nombre, apellido o identificación..."
-            class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm transition-colors"
-          />
-        </div>
-      </div>
+        </li>
+      </ol>
+    </nav>
+  </div>
 
-      <!-- Filtro por sede -->
-      <div>
-        <label for="sede-filter" class="block text-sm font-medium text-gray-700 mb-1">
-          Filtrar por sede
-        </label>
-        <select
-          id="sede-filter"
-          class="block w-full px-3 py-2 border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 sm:text-sm transition-colors"
-        >
-          <option value="">Todas las sedes</option>
-          <!-- Las opciones se llenarán dinámicamente con JavaScript -->
-        </select>
-      </div>
-
-      <!-- Botón de limpiar filtros -->
-      <div class="flex items-end">
-        <button
-          type="button"
-          id="clear-filters"
-          class="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 transition-colors"
-        >
-          <svg class="-ml-0.5 mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-          </svg>
-          Limpiar
-        </button>
-      </div>
-    </div>
-
-    <!-- Estadísticas rápidas -->
-    <div class="mt-4 pt-4 border-t border-gray-200">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-green-600" id="total-personas">{personasConEscalas.length}</div>
-          <div class="text-sm text-gray-500">Total de personas</div>
+  <!-- ====================================================== -->
+  <!-- ENCABEZADO CON FOTO Y ACCIONES -->
+  <!-- ====================================================== -->
+  <div class="bg-white shadow-lg rounded-lg overflow-hidden mb-6">
+    <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-8">
+      <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
+        <!-- Foto de perfil -->
+        <div class="flex-shrink-0">
+          {persona.url_foto ? (
+            <img 
+              class="h-32 w-32 rounded-full object-cover border-4 border-white shadow-lg" 
+              src={persona.url_foto} 
+              alt={`${persona.nombres} ${persona.primer_apellido}`}
+            />
+          ) : (
+            <div class="h-32 w-32 rounded-full bg-white border-4 border-white shadow-lg flex items-center justify-center">
+              <svg class="h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+          )}
         </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-blue-600" id="personas-filtradas">{personasConEscalas.length}</div>
-          <div class="text-sm text-gray-500">Resultados mostrados</div>
-        </div>
-        <div class="text-center">
-          <div class="text-2xl font-bold text-purple-600" id="sedes-activas">
-            {[...new Set(personasConEscalas.map(p => p.sedes?.nombre_sede))].length}
+
+        <!-- Información principal -->
+        <div class="flex-1 text-center md:text-left">
+          <h1 class="text-3xl font-bold text-white mb-2">
+            {persona.nombres} {persona.primer_apellido} {persona.segundo_apellido || ''}
+          </h1>
+          <div class="space-y-1 text-blue-100">
+            <p class="text-lg">{persona.tipo_id}: {persona.numero_id}</p>
+            <p>{persona.email || 'Sin email registrado'}</p>
+            <p>{persona.telefono || 'Sin teléfono registrado'}</p>
           </div>
-          <div class="text-sm text-gray-500">Sedes activas</div>
+          
+          <!-- Estado de bautismo -->
+          <div class="mt-3">
+            {persona.bautizado ? (
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                Bautizado
+              </span>
+            ) : (
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+                No bautizado
+              </span>
+            )}
+          </div>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="flex flex-col space-y-2 md:flex-row md:space-y-0 md:space-x-2">
+          <a
+            href={`/personas/${persona.id}/editar`}
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Editar
+          </a>
+          <button
+            onclick={`deletePerson('${persona.id}', '${persona.nombres} ${persona.primer_apellido}')`}
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Eliminar
+          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ====================================================== -->
-  <!-- TABLA DE PERSONAS (DESKTOP) -->
+  <!-- INFORMACIÓN DETALLADA -->
   <!-- ====================================================== -->
-  <div class="hidden md:block bg-white shadow-md rounded-lg overflow-hidden">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Foto
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Nombre Completo
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Identificación
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Sede
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Escalas
-          </th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Contacto
-          </th>
-          <th scope="col" class="relative px-6 py-3">
-            <span class="sr-only">Acciones</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody id="personas-table-body" class="bg-white divide-y divide-gray-200">
-        <!-- Las filas se generarán dinámicamente con JavaScript -->
-      </tbody>
-    </table>
-  </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Información Personal -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+        📋 Información Personal
+      </h2>
+      <dl class="space-y-3">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Género</dt>
+          <dd class="text-sm text-gray-900">{persona.genero || 'No especificado'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Fecha de Nacimiento</dt>
+          <dd class="text-sm text-gray-900">{fechaNacimientoFormateada}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Edad</dt>
+          <dd class="text-sm text-gray-900">{persona.edad ? `${persona.edad} años` : 'No calculada'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Estado Civil</dt>
+          <dd class="text-sm text-gray-900">{persona.estado_civil || 'No especificado'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Fecha de Registro</dt>
+          <dd class="text-sm text-gray-900">{fechaRegistroFormateada}</dd>
+        </div>
+      </dl>
+    </div>
 
-  <!-- ====================================================== -->
-  <!-- VISTA DE TARJETAS (MÓVIL) -->
-  <!-- ====================================================== -->
-  <div class="lg:hidden space-y-4" id="personas-cards-container">
-    <!-- Las tarjetas se generarán dinámicamente con JavaScript -->
+    <!-- Información de Contacto y Ubicación -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+        📍 Contacto y Ubicación
+      </h2>
+      <dl class="space-y-3">
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Dirección</dt>
+          <dd class="text-sm text-gray-900">{persona.direccion || 'No especificada'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Departamento</dt>
+          <dd class="text-sm text-gray-900">{persona.departamento || 'No especificado'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Municipio</dt>
+          <dd class="text-sm text-gray-900">{persona.municipio || 'No especificado'}</dd>
+        </div>
+        <div>
+          <dt class="text-sm font-medium text-gray-500">Sede</dt>
+          <dd class="text-sm text-gray-900">
+            {persona.sedes ? (
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {persona.sedes.nombre_sede}
+              </span>
+            ) : (
+              <span class="text-gray-400">Sin sede asignada</span>
+            )}
+          </dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- Escalas de Crecimiento -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+        📈 Escalas de Crecimiento
+      </h2>
+      {escalas.length > 0 ? (
+        <div class="space-y-2">
+          {escalas.map((escala) => (
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 mr-2 mb-2">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              {escala.nombre_escala}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p class="text-sm text-gray-500 italic">No tiene escalas de crecimiento asignadas</p>
+      )}
+    </div>
+
+    <!-- Ministerios -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+        ⛪ Ministerios
+      </h2>
+      {ministerios.length > 0 ? (
+        <div class="space-y-2">
+          {ministerios.map((ministerio) => (
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 mr-2 mb-2">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              {ministerio.nombre_minist}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p class="text-sm text-gray-500 italic">No participa en ministerios actualmente</p>
+      )}
+    </div>
   </div>
 
   <!-- ====================================================== -->
@@ -240,7 +366,7 @@ const errorMessage = Astro.url.searchParams.get("error");
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
           </svg>
         </div>
-        <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4">Confirmar Eliminación</h3>
+        <h3 class="text-lg font-medium text-gray-900 mt-2">Confirmar eliminación</h3>
         <div class="mt-2 px-7 py-3">
           <p class="text-sm text-gray-500">
             ¿Estás seguro de que deseas eliminar a <span id="delete-person-name" class="font-semibold"></span>?
@@ -266,38 +392,52 @@ const errorMessage = Astro.url.searchParams.get("error");
   </div>
 
   <!-- ====================================================== -->
-  <!-- SCRIPTS - VERSIÓN CORREGIDA PARA ASTRO -->
+  <!-- SCRIPTS -->
   <!-- ====================================================== -->
   <script>
-    // Importar las funciones desde los módulos
-    import { initializePersonasFilters } from 'src/scripts/personas-filters.js';
-    import { initializePersonasActions, viewPerson, editPerson, deletePerson } from 'src/scripts/personas-actions.js';
+    // Función para eliminar persona
+    function deletePerson(id, name) {
+      const deleteModal = document.getElementById('delete-modal');
+      const deletePersonNameSpan = document.getElementById('delete-person-name');
+      const confirmDeleteBtn = document.getElementById('confirm-delete');
+      const cancelDeleteBtn = document.getElementById('cancel-delete');
+      
+      deletePersonNameSpan.textContent = name;
+      deleteModal.classList.remove('hidden');
 
-    // Hacer las funciones disponibles globalmente para los onclick
-    window.viewPerson = viewPerson;
-    window.editPerson = editPerson;
+      // Manejar confirmación
+      confirmDeleteBtn.onclick = async function() {
+        try {
+          const response = await fetch(`/api/personas/${id}/delete`, {
+            method: 'POST'
+          });
+          
+          if (response.ok) {
+            window.location.href = '/personas?success=' + encodeURIComponent('Persona eliminada correctamente');
+          } else {
+            window.location.href = '/personas?error=' + encodeURIComponent('Error al eliminar la persona');
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          window.location.href = '/personas?error=' + encodeURIComponent('Error inesperado al eliminar la persona');
+        }
+      };
+
+      // Manejar cancelación
+      cancelDeleteBtn.onclick = function() {
+        deleteModal.classList.add('hidden');
+      };
+
+      // Cerrar modal al hacer clic fuera
+      deleteModal.onclick = function(e) {
+        if (e.target === deleteModal) {
+          deleteModal.classList.add('hidden');
+        }
+      };
+    }
+
+    // Hacer la función disponible globalmente
     window.deletePerson = deletePerson;
-
-    // Datos de personas pasados desde Astro
-    const personasDataElement = document.getElementById('personas-data');
-const personasData = personasDataElement ? JSON.parse(personasDataElement.textContent || '[]') : [];
-
-    // Inicializar cuando el DOM esté listo
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM cargado, inicializando aplicación...');
-      console.log('Datos de personas disponibles:', personasData.length);
-
-      // Inicializar filtros y acciones
-      try {
-        initializePersonasFilters(personasData);
-        initializePersonasActions();
-        console.log('Aplicación inicializada correctamente');
-      } catch (error) {
-        console.error('Error al inicializar la aplicación:', error);
-      }
-    });
   </script>
-
-  <!-- Datos JSON para JavaScript -->
-  <script id="personas-data" type="application/json" set:html={JSON.stringify(personasConEscalas)}></script>
 </LayoutProtected>
+

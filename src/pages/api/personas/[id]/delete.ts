@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ params, redirect }) => {
       return redirect('/personas?error=' + encodeURIComponent(`Error al eliminar la persona: ${error.message}`));
     }
 
-    console.log('Persona eliminada exitosamente');
+    console.log('Personadiña eliminada exitosamente');
     return redirect('/personas?success=' + encodeURIComponent('Persona eliminada correctamente'));
 
   } catch (error) {
