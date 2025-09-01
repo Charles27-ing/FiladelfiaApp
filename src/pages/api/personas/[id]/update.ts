@@ -85,22 +85,7 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
         }
 
         const bucketName = "fotos_personas";
-        const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-
-        if (!bucketExists) {
-          console.log("[UPDATE] Creando bucket fotos_personas...");
-          const { error: createBucketError } = await supabase.storage.createBucket(bucketName, {
-            public: true,
-            allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
-            fileSizeLimit: 5242880 // 5MB
-          });
-
-          if (createBucketError) {
-            console.error("Error al crear bucket:", createBucketError);
-            return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Error al configurar almacenamiento: " + createBucketError.message)}`);
-          }
-          console.log("[UPDATE] Bucket fotos_personas creado exitosamente");
-        }
+       
 
         // Obtener la foto actual para eliminarla después
         const { data: personaActual } = await supabase
