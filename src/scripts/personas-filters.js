@@ -1,10 +1,10 @@
-// src/scripts/personas-filters.js - VERSIÓN FINAL CON MINISTERIOS
+// src/scripts/personas-filters.js - VERSIÓN CORREGIDA SIN DUPLICADOS EN FILTRO DE SEDES
 
 /**
  * Inicializa los filtros y la búsqueda de personas.
  * @param {Array<Object>} initialPersonas - El array inicial de personas a filtrar.
  */
-export  function initializePersonasFilters(initialPersonas) {
+export function initializePersonasFilters(initialPersonas) {
   console.log("Inicializando filtros con", initialPersonas.length, "personas.");
 
   const searchInput = document.getElementById("search");
@@ -21,23 +21,47 @@ export  function initializePersonasFilters(initialPersonas) {
   if (totalCountSpan) totalCountSpan.textContent = initialPersonas.length.toString();
   if (filteredCountSpan) filteredCountSpan.textContent = initialPersonas.length.toString();
 
-  // Llenar el filtro de sedes
+  // ✅ LLENAR EL FILTRO DE SEDES SIN DUPLICADOS
   populateSedeFilter(initialPersonas);
 
   /**
-   * Llena el select de sedes con las sedes únicas de las personas.
+   * ✅ FUNCIÓN CORREGIDA: Llena el select de sedes con las sedes únicas de las personas.
    * @param {Array<Object>} personas - Array de personas.
    */
   function populateSedeFilter(personas) {
     if (!sedeFilter) return;
 
-    const sedesUnicas = [...new Set(personas.map(p => p.sedes).filter(Boolean))];
+    console.log("Poblando filtro de sedes...");
+
+    // ✅ USAR MAP PARA ELIMINAR DUPLICADOS POR ID
+    const sedesMap = new Map();
+    
+    personas.forEach(persona => {
+      if (persona.sedes && persona.sedes.id) {
+        sedesMap.set(persona.sedes.id, persona.sedes);
+      }
+    });
+
+    // Convertir a array y ordenar alfabéticamente
+    const sedesUnicas = Array.from(sedesMap.values())
+      .sort((a, b) => a.nombre_sede.localeCompare(b.nombre_sede));
+
+    console.log("Sedes únicas encontradas:", sedesUnicas.length);
+
+    // ✅ LIMPIAR OPCIONES EXISTENTES (EXCEPTO LA PRIMERA "Todas las sedes")
+    while (sedeFilter.children.length > 1) {
+      sedeFilter.removeChild(sedeFilter.lastChild);
+    }
+
+    // Agregar opciones únicas
     sedesUnicas.forEach(sede => {
       const option = document.createElement("option");
-      option.value = sede.id;
+      option.value = sede.id; // ✅ USAR ID COMO VALUE
       option.textContent = sede.nombre_sede;
       sedeFilter.appendChild(option);
     });
+
+    console.log("Filtro de sedes poblado con", sedesUnicas.length, "opciones");
   }
 
   /**
@@ -79,7 +103,7 @@ export  function initializePersonasFilters(initialPersonas) {
         ? person.ministerios.map(ministerio => `<span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">${ministerio.nombre_minist}</span>`).join(" ")
         : `<span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Sin Ministerio</span>`;
 
-      // ⭐ ESTRELLA DE BAUTISMO - IMPLEMENTACIÓN CORRECTA
+      // ⭐ ESTRELLA DE BAUTISMO
       const baptizedStar = person.bautizado === true ? `
         <svg class="w-4 h-4 ml-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" title="Persona bautizada">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -201,7 +225,7 @@ export  function initializePersonasFilters(initialPersonas) {
         ? person.ministerios.map(ministerio => `<span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">${ministerio.nombre_minist}</span>`).join(" ")
         : `<span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">Sin Ministerio</span>`;
 
-      // ⭐ ESTRELLA DE BAUTISMO - IMPLEMENTACIÓN CORRECTA
+      // ⭐ ESTRELLA DE BAUTISMO
       const baptizedStar = person.bautizado === true ? `
         <svg class="w-4 h-4 ml-2 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" title="Persona bautizada">
           <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
@@ -257,11 +281,13 @@ export  function initializePersonasFilters(initialPersonas) {
   }
 
   /**
-   * Aplica los filtros y actualiza la vista.
+   * ✅ FUNCIÓN CORREGIDA: Aplica los filtros y actualiza la vista.
    */
   function applyFilters() {
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
     const selectedSede = sedeFilter ? sedeFilter.value : "";
+
+    console.log("Aplicando filtros - Búsqueda:", searchTerm, "Sede:", selectedSede);
 
     const filtered = initialPersonas.filter(person => {
       const matchesSearch = (
@@ -270,52 +296,43 @@ export  function initializePersonasFilters(initialPersonas) {
         (person.segundo_apellido && person.segundo_apellido.toLowerCase().includes(searchTerm)) ||
         person.numero_id.includes(searchTerm) ||
         person.email.toLowerCase().includes(searchTerm) ||
+        person.telefono.includes(searchTerm) ||
         (person.departamento && person.departamento.toLowerCase().includes(searchTerm)) ||
-        (person.municipio && person.municipio.toLowerCase().includes(searchTerm)) ||
-        (person.direccion && person.direccion.toLowerCase().includes(searchTerm)) ||
-        (person.telefono && person.telefono.includes(searchTerm))
+        (person.municipio && person.municipio.toLowerCase().includes(searchTerm))
       );
 
-      const matchesSede = selectedSede === "" || (person.sedes && person.sedes.id === selectedSede);
+      // ✅ CORREGIDO: COMPARAR POR ID EN LUGAR DE NOMBRE
+      const matchesSede = !selectedSede || (person.sedes && person.sedes.id === selectedSede);
 
       return matchesSearch && matchesSede;
     });
 
+    console.log("Personas filtradas:", filtered.length);
+
+    currentPersonas = filtered;
     renderPersonasDesktop(filtered);
     renderPersonasMobile(filtered);
   }
 
-  // Event Listeners
+  // ✅ EVENT LISTENERS
   if (searchInput) {
-    searchInput.addEventListener("input", debounce(applyFilters, 300));
+    searchInput.addEventListener("input", applyFilters);
   }
+
   if (sedeFilter) {
     sedeFilter.addEventListener("change", applyFilters);
   }
+
   if (clearFiltersButton) {
-    clearFiltersButton.addEventListener("click", () => {
+    clearFiltersButton.addEventListener("click", function() {
       if (searchInput) searchInput.value = "";
       if (sedeFilter) sedeFilter.value = "";
       applyFilters();
     });
   }
 
-  // Inicializar la vista con todas las personas
-  renderPersonasDesktop(initialPersonas);
-  renderPersonasMobile(initialPersonas);
-
-  // Utilidad para debounce
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
+  // ✅ RENDERIZADO INICIAL
+  applyFilters();
 
   console.log("Filtros inicializados correctamente");
 }

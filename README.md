@@ -49,3 +49,5 @@ agregar departamento y municipio
 grupo 
 estado civil
 estado
+**solucionado filtro de sedes sin duplicados**
+Vamos a ver detalles de las personas
