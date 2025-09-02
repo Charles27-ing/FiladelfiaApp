@@ -15,7 +15,18 @@ export function initializePersonasFilters(initialPersonas) {
   const totalCountSpan = document.getElementById("total-count");
   const filteredCountSpan = document.getElementById("filtered-count");
 
+  // Elementos de paginación
+  const prevBtnMobile = document.getElementById("prev-btn-mobile");
+  const nextBtnMobile = document.getElementById("next-btn-mobile");
+  const prevBtnDesktop = document.getElementById("prev-btn-desktop");
+  const nextBtnDesktop = document.getElementById("next-btn-desktop");
+  const paginationFrom = document.getElementById("pagination-from");
+  const paginationTo = document.getElementById("pagination-to");
+  const paginationTotal = document.getElementById("pagination-total");
+
   let currentPersonas = initialPersonas;
+  let currentPage = 1;
+  const itemsPerPage = 5; // Número de elementos por página
 
   // Actualizar conteos iniciales
   if (totalCountSpan) totalCountSpan.textContent = initialPersonas.length.toString();
@@ -65,15 +76,24 @@ export function initializePersonasFilters(initialPersonas) {
   }
 
   /**
-   * Renderiza las personas en el contenedor desktop (tabla).
+   * Renderiza las personas en el contenedor desktop (tabla) con paginación.
    * @param {Array<Object>} personasToRender - Array de personas a mostrar.
    */
   function renderPersonasDesktop(personasToRender) {
     if (!personasContainer) return;
 
+    // Calcular índices para la paginación
+    const totalPages = Math.ceil(personasToRender.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, personasToRender.length);
+    const paginatedPersonas = personasToRender.slice(startIndex, endIndex);
+
+    // Actualizar controles de paginación
+    updatePaginationControls(personasToRender.length);
+
     personasContainer.innerHTML = ""; // Limpiar contenedor
 
-    if (personasToRender.length === 0) {
+    if (paginatedPersonas.length === 0) {
       personasContainer.innerHTML = `
         <tr>
           <td colspan="5" class="px-6 py-10 text-center text-gray-500">
@@ -89,7 +109,7 @@ export function initializePersonasFilters(initialPersonas) {
       return;
     }
 
-    personasToRender.forEach(person => {
+    paginatedPersonas.forEach(person => {
       const photoSrc = person.url_foto || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'/%3E%3C/svg%3E`;
       const sedeName = person.sedes ? person.sedes.nombre_sede : "Sin Sede";
       
@@ -165,7 +185,7 @@ export function initializePersonasFilters(initialPersonas) {
             <div class="flex justify-end space-x-2">
               <button onclick="viewPerson('${person.id}')" class="text-green-600 hover:text-green-900 p-1 rounded-md hover:bg-green-50 transition-colors" title="Ver detalles">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                 </svg>
               </button>
@@ -186,19 +206,28 @@ export function initializePersonasFilters(initialPersonas) {
       personasContainer.insertAdjacentHTML("beforeend", personRowHtml);
     });
 
-    if (filteredCountSpan) filteredCountSpan.textContent = personasToRender.length.toString();
+    if (filteredCountSpan) filteredCountSpan.textContent = paginatedPersonas.length.toString();
   }
 
   /**
-   * Renderiza las personas en el contenedor móvil (cards).
+   * Renderiza las personas en el contenedor móvil (cards) con paginación.
    * @param {Array<Object>} personasToRender - Array de personas a mostrar.
    */
   function renderPersonasMobile(personasToRender) {
     if (!personasContainerMobile) return;
 
+    // Calcular índices para la paginación
+    const totalPages = Math.ceil(personasToRender.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, personasToRender.length);
+    const paginatedPersonas = personasToRender.slice(startIndex, endIndex);
+
+    // Actualizar controles de paginación
+    updatePaginationControls(personasToRender.length);
+
     personasContainerMobile.innerHTML = ""; // Limpiar contenedor
 
-    if (personasToRender.length === 0) {
+    if (paginatedPersonas.length === 0) {
       personasContainerMobile.innerHTML = `
         <div class="text-center py-10 text-gray-500 m-4">
           <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
@@ -211,7 +240,7 @@ export function initializePersonasFilters(initialPersonas) {
       return;
     }
 
-    personasToRender.forEach(person => {
+    paginatedPersonas.forEach(person => {
       const photoSrc = person.url_foto || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'/%3E%3C/svg%3E`;
       const sedeName = person.sedes ? person.sedes.nombre_sede : "Sin Sede";
       
@@ -281,6 +310,64 @@ export function initializePersonasFilters(initialPersonas) {
   }
 
   /**
+   * Actualiza los controles de paginación.
+   * @param {number} totalItems - Número total de elementos filtrados.
+   */
+  function updatePaginationControls(totalItems) {
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage + 1;
+    const endIndex = Math.min(startIndex + itemsPerPage - 1, totalItems);
+
+    // Actualizar textos
+    if (paginationFrom) paginationFrom.textContent = startIndex;
+    if (paginationTo) paginationTo.textContent = endIndex;
+    if (paginationTotal) paginationTotal.textContent = totalItems;
+
+    // Actualizar estado de los botones
+    const isFirstPage = currentPage === 1;
+    const isLastPage = currentPage >= totalPages;
+
+    [prevBtnMobile, prevBtnDesktop].forEach(btn => {
+      if (btn) {
+        btn.disabled = isFirstPage;
+        btn.classList.toggle('opacity-50', isFirstPage);
+        btn.classList.toggle('cursor-not-allowed', isFirstPage);
+        btn.classList.toggle('hover:bg-gray-50', !isFirstPage);
+      }
+    });
+
+    [nextBtnMobile, nextBtnDesktop].forEach(btn => {
+      if (btn) {
+        btn.disabled = isLastPage;
+        btn.classList.toggle('opacity-50', isLastPage);
+        btn.classList.toggle('cursor-not-allowed', isLastPage);
+        btn.classList.toggle('hover:bg-gray-50', !isLastPage);
+      }
+    });
+  }
+
+  /**
+   * Cambia a la página especificada.
+   * @param {number} pageNumber - Número de página a la que cambiar.
+   */
+  function goToPage(pageNumber) {
+    const totalPages = Math.ceil(currentPersonas.length / itemsPerPage);
+    const newPage = Math.max(1, Math.min(pageNumber, totalPages));
+    
+    if (newPage !== currentPage) {
+      currentPage = newPage;
+      renderPersonasDesktop(currentPersonas);
+      renderPersonasMobile(currentPersonas);
+      
+      // Desplazarse al principio de la tabla
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
+  }
+
+  /**
    * ✅ FUNCIÓN CORREGIDA: Aplica los filtros y actualiza la vista.
    */
   function applyFilters() {
@@ -310,30 +397,50 @@ export function initializePersonasFilters(initialPersonas) {
     console.log("Personas filtradas:", filtered.length);
 
     currentPersonas = filtered;
+    currentPage = 1; // Resetear a la primera página al filtrar
     renderPersonasDesktop(filtered);
     renderPersonasMobile(filtered);
   }
 
   // ✅ EVENT LISTENERS
   if (searchInput) {
-    searchInput.addEventListener("input", applyFilters);
+    searchInput.addEventListener("input", function() {
+      currentPage = 1; // Resetear a la primera página al buscar
+      applyFilters();
+    });
   }
 
   if (sedeFilter) {
-    sedeFilter.addEventListener("change", applyFilters);
+    sedeFilter.addEventListener("change", function() {
+      currentPage = 1; // Resetear a la primera página al filtrar
+      applyFilters();
+    });
   }
 
   if (clearFiltersButton) {
     clearFiltersButton.addEventListener("click", function() {
       if (searchInput) searchInput.value = "";
       if (sedeFilter) sedeFilter.value = "";
+      currentPage = 1; // Resetear a la primera página al limpiar filtros
       applyFilters();
     });
   }
+
+  // Event listeners para los botones de paginación
+  [prevBtnMobile, prevBtnDesktop].forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', () => goToPage(currentPage - 1));
+    }
+  });
+
+  [nextBtnMobile, nextBtnDesktop].forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', () => goToPage(currentPage + 1));
+    }
+  });
 
   // ✅ RENDERIZADO INICIAL
   applyFilters();
 
   console.log("Filtros inicializados correctamente");
 }
-

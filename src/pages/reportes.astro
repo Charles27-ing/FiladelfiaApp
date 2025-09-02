@@ -1,0 +1,401 @@
+---
+// src/pages/reportes.astro
+import LayoutProtected from "../layouts/LayoutProtected.astro";
+import { supabase } from "../lib/supabase";
+
+// Obtener datos para reportes
+const { data: personas, error: personasError } = await supabase
+    .from("persona")
+    .select(`
+        id,
+        genero,
+        bautizado,
+        estado_civil,
+        departamento,
+        sede:sedes(nombre_sede),
+        escala:escala_de_crecimiento(nombre_escala)
+    `);
+
+const { data: sedes, error: sedesError } = await supabase
+    .from("sedes")
+    .select("id, nombre_sede");
+
+if (personasError || sedesError) {
+    console.error("Error al cargar datos para reportes:", personasError || sedesError);
+}
+
+// Procesar datos para los gráficos
+const reportData = {
+    // Total de personas
+    totalPersonas: personas?.length || 0,
+    
+    // Personas por sede
+    personasPorSede: sedes?.map(sede => ({
+        sede: sede.nombre_sede,
+        cantidad: personas?.filter(p => p.sede?.nombre_sede === sede.nombre_sede).length || 0
+    })) || [],
+    
+    // Distribución por género
+    distribucionGenero: {
+        masculino: personas?.filter(p => p.genero === 'Masculino').length || 0,
+        femenino: personas?.filter(p => p.genero === 'Femenino').length || 0
+    },
+    
+    // Personas bautizadas vs no bautizadas
+    estadoBautismo: {
+        bautizados: personas?.filter(p => p.bautizado === true).length || 0,
+        noBautizados: personas?.filter(p => p.bautizado === false).length || 0
+    },
+    
+    // Distribución por estado civil
+    estadoCivil: {
+        soltero: personas?.filter(p => p.estado_civil === 'SOLTERO(A)').length || 0,
+        casado: personas?.filter(p => p.estado_civil === 'CASADO(A)').length || 0,
+        unionLibre: personas?.filter(p => p.estado_civil === 'UNION-LIBRE').length || 0,
+        viudo: personas?.filter(p => p.estado_civil === 'VIUDO(A)').length || 0
+    },
+    
+    // Top 5 departamentos
+    topDepartamentos: Object.entries(
+        personas?.reduce((acc, p) => {
+            if (p.departamento) {
+                acc[p.departamento] = (acc[p.departamento] || 0) + 1;
+            }
+            return acc;
+        }, {}) || {}
+    )
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5)
+    .map(([dept, count]) => ({ departamento: dept, cantidad: count }))
+};
+
+console.log("[Reportes] Datos procesados:", reportData);
+---
+
+<LayoutProtected title="Reportes y Estadísticas">
+    <div class="bg-gray-50 min-h-screen p-4 sm:p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                    📊 Reportes y Estadísticas
+                </h1>
+                <p class="text-gray-600">
+                    Visualización de datos y métricas importantes de la iglesia
+                </p>
+            </div>
+
+            <!-- Tarjetas de resumen -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total de Personas -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Personas</p>
+                            <p class="text-2xl font-bold text-gray-900">{reportData.totalPersonas}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hombres -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Hombres</p>
+                            <p class="text-2xl font-bold text-gray-900">{reportData.distribucionGenero.masculino}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mujeres -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-pink-100 text-pink-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Mujeres</p>
+                            <p class="text-2xl font-bold text-gray-900">{reportData.distribucionGenero.femenino}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bautizados -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Bautizados</p>
+                            <p class="text-2xl font-bold text-gray-900">{reportData.estadoBautismo.bautizados}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Gráfico: Personas por Sede -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Personas por Sede</h3>
+                    <div class="relative h-64">
+                        <canvas id="sedesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Distribución por Género -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Distribución por Género</h3>
+                    <div class="relative h-64">
+                        <canvas id="generoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Estado de Bautismo -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Estado de Bautismo</h3>
+                    <div class="relative h-64">
+                        <canvas id="bautismoChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Estado Civil -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Estado Civil</h3>
+                    <div class="relative h-64">
+                        <canvas id="estadoCivilChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Top Departamentos -->
+                <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Top 5 Departamentos</h3>
+                    <div class="relative h-64">
+                        <canvas id="departamentosChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón para volver -->
+            <div class="mt-8 text-center">
+                <a 
+                    href="/personas" 
+                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
+                >
+                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Volver a Gestión de Personas
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Script -->
+    <script is:inline define:vars={{ reportData }}>
+        // Cargar Chart.js desde CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = function() {
+            // Configuración de colores
+            const colors = {
+                primary: 'rgba(34, 197, 94, 0.8)',
+                secondary: 'rgba(59, 130, 246, 0.8)',
+                accent: 'rgba(236, 72, 153, 0.8)',
+                warning: 'rgba(245, 158, 11, 0.8)',
+                success: 'rgba(16, 185, 129, 0.8)',
+                info: 'rgba(99, 102, 241, 0.8)'
+            };
+
+            // 1. Gráfico de Personas por Sede
+            const sedesCtx = document.getElementById('sedesChart');
+            if (sedesCtx && reportData.personasPorSede) {
+                new Chart(sedesCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: reportData.personasPorSede.map(item => item.sede),
+                        datasets: [{
+                            label: 'Personas',
+                            data: reportData.personasPorSede.map(item => item.cantidad),
+                            backgroundColor: colors.primary,
+                            borderColor: 'rgba(34, 197, 94, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Gráfico de Distribución por Género
+            const generoCtx = document.getElementById('generoChart');
+            if (generoCtx && reportData.distribucionGenero) {
+                new Chart(generoCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Masculino', 'Femenino'],
+                        datasets: [{
+                            data: [
+                                reportData.distribucionGenero.masculino,
+                                reportData.distribucionGenero.femenino
+                            ],
+                            backgroundColor: [colors.secondary, colors.accent],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 3. Gráfico de Estado de Bautismo
+            const bautismoCtx = document.getElementById('bautismoChart');
+            if (bautismoCtx && reportData.estadoBautismo) {
+                new Chart(bautismoCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Bautizados', 'No Bautizados'],
+                        datasets: [{
+                            data: [
+                                reportData.estadoBautismo.bautizados,
+                                reportData.estadoBautismo.noBautizados
+                            ],
+                            backgroundColor: [colors.warning, colors.info],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 4. Gráfico de Estado Civil
+            const estadoCivilCtx = document.getElementById('estadoCivilChart');
+            if (estadoCivilCtx && reportData.estadoCivil) {
+                new Chart(estadoCivilCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Soltero(a)', 'Casado(a)', 'Unión Libre', 'Viudo(a)'],
+                        datasets: [{
+                            label: 'Personas',
+                            data: [
+                                reportData.estadoCivil.soltero,
+                                reportData.estadoCivil.casado,
+                                reportData.estadoCivil.unionLibre,
+                                reportData.estadoCivil.viudo
+                            ],
+                            backgroundColor: [
+                                colors.primary,
+                                colors.secondary,
+                                colors.accent,
+                                colors.warning
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 5. Gráfico de Top Departamentos
+            const departamentosCtx = document.getElementById('departamentosChart');
+            if (departamentosCtx && reportData.topDepartamentos) {
+                new Chart(departamentosCtx, {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: reportData.topDepartamentos.map(item => item.departamento),
+                        datasets: [{
+                            label: 'Personas',
+                            data: reportData.topDepartamentos.map(item => item.cantidad),
+                            backgroundColor: colors.success,
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+        };
+        document.head.appendChild(script);
+    </script>
+</LayoutProtected>
+

@@ -22,7 +22,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     // Extraer archivo de foto
     const fotoFile = formData.get('foto') as File | null;
-    let fotoUrl = null;
+    let fotoUrl = formData.get('url_foto')?.toString() || null;
 
     // --- 3. SUBIDA DE FOTO (si existe) ---
     if (fotoFile && fotoFile.size > 0) {
@@ -38,19 +38,22 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
       if (uploadError) {
         console.error("[API] Error al subir foto:", uploadError);
-        return new Response(JSON.stringify({ error: 'Error al subir la foto' }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        // Continuar sin fallar, usaremos la URL proporcionada o la imagen predeterminada
+      } else {
+        // Obtener URL pública de la foto
+        const { data: { publicUrl } } = supabase.storage
+          .from('fotos_personas')
+          .getPublicUrl(filePath);
+
+        fotoUrl = publicUrl;
+        console.log("[API] Foto subida exitosamente:", fotoUrl);
       }
+    }
 
-      // Obtener URL pública de la foto
-      const { data: { publicUrl } } = supabase.storage
-        .from('fotos_personas')
-        .getPublicUrl(filePath);
-
-      fotoUrl = publicUrl;
-      console.log("[API] Foto subida exitosamente:", fotoUrl);
+    // Usar imagen predeterminada si no hay URL de foto
+    if (!fotoUrl) {
+      fotoUrl = '/default-avatar.png'; // Asegúrate de tener este archivo en tu carpeta public/
+      console.log("[API] Usando imagen predeterminada");
     }
 
     // --- 4. CONSTRUCCIÓN DEL OBJETO PERSONA ---
@@ -77,7 +80,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     console.log("[API] Objeto persona construido:", personaData);
 
     // --- 5. VALIDACIÓN ---
-    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'email', 'url_foto', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
+    const requiredFields = ['nombres', 'primer_apellido', 'tipo_id', 'numero_id', 'fecha_nacimiento', 'genero', 'telefono', 'direccion', 'estado_civil', 'departamento', 'municipio', 'sede_id'];
     
     for (const field of requiredFields) {
       if (!personaData[field as keyof typeof personaData]) {
