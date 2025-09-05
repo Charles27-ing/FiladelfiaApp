@@ -1,11 +1,12 @@
 ---
 // src/pages/personas/nueva.astro
-import LayoutProtected from "../../layouts/LayoutProtected.astro";
-import { supabase } from "../../lib/supabase";
-import type { Departamento } from "../../models/persona.model";
+import LayoutProtected from "@layouts/LayoutProtected.astro";
+import { supabase } from "@lib/supabase";
+import type { Departamento } from "@/models/persona.model";
+import Preloader from "@components/Preloader.astro";
 
 // Cargar datos de Colombia (departamentos y municipios)
-import colombiaData from "../../data/colombia.json";
+import colombiaData from "@/data/colombia.json";
 const departamentos: Departamento[] = colombiaData.map((dept: any) => ({
     id: dept.id.toString(),
     nombre: dept.departamento,
@@ -26,6 +27,7 @@ if (error) {
 ---
 
 <LayoutProtected title="Registrar Nueva Persona">
+    <Preloader />
     <div class="bg-gray-50 p-4 sm:p-8">
         <div class="max-w-5xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
             <h1 class="text-3xl font-bold text-gray-800 mb-6">
@@ -341,6 +343,7 @@ if (error) {
             const prevBtn = document.getElementById('prev-btn');
             const nextBtn = document.getElementById('next-btn');
             const submitBtn = document.getElementById('submit-btn');
+            const preloader = document.getElementById('preloader');
 
             // --- LÓGICA DE NAVEGACIÓN ---
             nextBtn.addEventListener('click', function() {
@@ -366,6 +369,12 @@ if (error) {
                     return;
                 }
 
+                // Mostrar preloader ligero para verificación
+                preloader.style.display = 'flex';
+                document.getElementById('preloader-text').textContent = 'Verificando identificación...';
+                checkIdBtn.disabled = true;
+                checkIdBtn.textContent = 'Verificando...';
+
                 try {
                     idStatus.innerHTML = `<span class="text-blue-600">🔍 Verificando...</span>`;
                     const response = await fetch('/api/id-checker', {
@@ -385,6 +394,11 @@ if (error) {
                 } catch (error) {
                     idStatus.innerHTML = `<span class="text-red-600">Error al verificar el ID. Intente nuevamente.</span>`;
                     nextBtn.classList.add('hidden');
+                } finally {
+                    // Ocultar preloader
+                    preloader.style.display = 'none';
+                    checkIdBtn.disabled = false;
+                    checkIdBtn.textContent = 'Verificar ID';
                 }
             });
             
@@ -415,10 +429,30 @@ if (error) {
 
             const form = document.getElementById('wizard-form');
             form.addEventListener('submit', function(e) {
+                // Mostrar preloader para registro de persona
+                preloader.style.display = 'flex';
+                document.getElementById('preloader-text').textContent = 'Registrando persona...';
+                
                 // Deshabilitar botón para evitar doble envío
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Registrando...';
             });
+
+            // Funciones de utilidad para el preloader
+            window.showPreloader = function(message = 'Procesando...') {
+                preloader.style.display = 'flex';
+                document.getElementById('preloader-text').textContent = message;
+            };
+
+            window.hidePreloader = function() {
+                preloader.style.display = 'none';
+            };
+
+            // Ocultar preloader si hay un error en la página
+            window.addEventListener('error', function() {
+                preloader.style.display = 'none';
+            });
+
         });
     </script>
 </LayoutProtected>
