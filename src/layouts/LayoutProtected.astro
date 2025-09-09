@@ -123,15 +123,26 @@ const userEmail = session.user?.email || 'Invitado';
 						</a>
 
 						<!-- Comprobantes -->
-						<a href="/comprobantes" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-							currentPath.startsWith('/comprobantes') 
+						<a href="/contabilidad/index" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+							currentPath.startsWith('/contabilidad/index') 
 								? 'bg-green-100 text-green-700 border-r-2 border-green-600' 
 								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}>
-							<svg class={`mr-3 h-5 w-5 ${currentPath.startsWith('/comprobantes') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<svg class={`mr-3 h-5 w-5 ${currentPath.startsWith('/contabilidad/index') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 							</svg>
-							Comprobantes
+							Contabilidad
+						</a>
+						<!-- Registrar Persona -->
+						<a href="/contabilidad/nueva-transaccion" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ml-6 ${
+							currentPath === '/contabilidad/nueva-transaccion' 
+								? 'bg-green-100 text-green-700 border-r-2 border-green-600' 
+								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+						}`}>
+							<svg class={`mr-3 h-4 w-4 ${currentPath === '/contabilidad/nueva-transaccion' ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+							</svg>
+							Registrar Transacción
 						</a>
 
 						<!-- Reportes -->

@@ -1,0 +1,323 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+// Definición de tipos
+interface Categoria {
+  id: string;
+  nombre: string;
+  tipo: string;
+}
+
+interface Actividad {
+  id: string;
+  nombre: string;
+}
+
+interface Persona {
+  id: string;
+  nombre_completo: string;
+  documento_identidad?: string;
+}
+
+// Obtener la URL base
+const baseUrl = Astro.url.origin;
+
+// Estado inicial
+let categorias: Categoria[] = [];
+let actividades: Actividad[] = [];
+let error: string | null = null;
+
+// Cargar categorías y actividades para los dropdowns
+try {
+  console.log('Solicitando categorías a:', `${baseUrl}/api/contabilidad/categorias`);
+  const [categoriasRes, actividadesRes] = await Promise.all([
+    fetch(`${baseUrl}/api/contabilidad/categorias`),
+    fetch(`${baseUrl}/api/contabilidad/actividades`)
+  ]);
+  
+  if (categoriasRes.ok) {
+    const categoriasData = await categoriasRes.json();
+    console.log('Respuesta de categorías:', categoriasData);
+    categorias = categoriasData;
+  } else {
+    const errorText = await categoriasRes.text();
+    console.error('Error cargando categorías:', errorText);
+    error = 'No se pudieron cargar las categorías';
+  }
+  
+  if (actividadesRes.ok) {
+    actividades = await actividadesRes.json();
+  } else {
+    console.error('Error cargando actividades:', await actividadesRes.text());
+  }
+} catch (err) {
+  const errorObj = err as Error;
+  console.error('Error en la carga de datos:', errorObj);
+  error = 'Error al cargar los datos necesarios';
+}
+
+// Obtener mensajes de URL (success/error)
+const url = new URL(Astro.request.url);
+const successMessage = url.searchParams.get('success');
+const errorMessage = url.searchParams.get('error');
+---
+
+<Layout title="Registrar Nueva Transacción">
+  <div class="max-w-2xl mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-6">Registrar Nueva Transacción</h1>
+
+    <!-- Mostrar mensajes de éxito o error -->
+    {successMessage && (
+      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        {successMessage}
+      </div>
+    )}
+    
+    {errorMessage && (
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {errorMessage}
+      </div>
+    )}
+    
+    {error ? (
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {error}
+      </div>
+    ) : (
+      <form id="transaccion-form" method="POST" action="/api/contabilidad/transacciones" class="space-y-4">
+        <!-- Campo de búsqueda de persona -->
+        <div class="relative">
+          <label for="persona_buscar" class="block text-sm font-medium text-gray-700 mb-1">
+            Buscar Persona (opcional)
+          </label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="persona_buscar" 
+              name="persona_buscar" 
+              placeholder="Buscar por nombre o documento..." 
+              class="w-full p-2 border rounded-md pr-10"
+              autocomplete="off"
+            />
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+          <input type="hidden" id="persona_id" name="persona_id" value="" />
+          <div id="persona_resultados" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            <!-- Los resultados de la búsqueda se cargarán aquí -->
+          </div>
+          <div id="persona_seleccionada" class="mt-2 p-2 bg-gray-50 rounded hidden">
+            <!-- Se muestra cuando se selecciona una persona -->
+          </div>
+        </div>
+
+        <div>
+          <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
+          <input type="date" id="fecha" name="fecha" required class="mt-1 block w-full border rounded-md p-2" />
+        </div>
+
+        <div>
+          <label for="monto" class="block text-sm font-medium text-gray-700">Monto</label>
+          <input type="number" id="monto" name="monto" step="0.01" min="0.01" required class="mt-1 block w-full border rounded-md p-2" />
+        </div>
+
+        <div>
+          <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
+          <select id="tipo" name="tipo" required class="mt-1 block w-full border rounded-md p-2">
+            <option value="ingreso">Ingreso</option>
+            <option value="egreso">Egreso</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="categoria_id" class="block text-sm font-medium text-gray-700">Categoría</label>
+          {categorias.length > 0 ? (
+            <select id="categoria_id" name="categoria_id" required class="mt-1 block w-full border rounded-md p-2">
+              <option value="">Seleccione una categoría</option>
+              {categorias.map((cat: Categoria) => (
+                <option value={cat.id}>
+                  {cat.nombre} ({cat.tipo})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <p class="text-red-500 text-sm">No hay categorías disponibles</p>
+          )}
+        </div>
+
+        <div>
+          <label for="actividad_id" class="block text-sm font-medium text-gray-700">Actividad (opcional)</label>
+          <select id="actividad_id" name="actividad_id" class="mt-1 block w-full border rounded-md p-2">
+            <option value="">Ninguna</option>
+            {actividades.map((act: Actividad) => (
+              <option value={act.id}>{act.nombre}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+          <textarea id="descripcion" name="descripcion" class="mt-1 block w-full border rounded-md p-2"></textarea>
+        </div>
+
+        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          Registrar Transacción
+        </button>
+      </form>
+    )}
+  </div>
+
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('transaccion-form');
+      const personaBuscar = document.getElementById('persona_buscar');
+      const personaIdInput = document.getElementById('persona_id');
+      const resultadosDiv = document.getElementById('persona_resultados');
+      const personaSeleccionadaDiv = document.getElementById('persona_seleccionada');
+      
+      let timeoutId;
+
+      // Función para buscar personas
+      async function buscarPersonas(termino) {
+        if (termino.length < 2) {
+          resultadosDiv.classList.add('hidden');
+          return;
+        }
+
+        try {
+          const response = await fetch(`${window.location.origin}/api/personas/buscar?q=${encodeURIComponent(termino)}`);
+          const personas = await response.json();
+          
+          if (personas.length > 0) {
+            resultadosDiv.innerHTML = personas.map(persona => `
+              <div class="p-2 hover:bg-gray-100 cursor-pointer" data-id="${persona.id}" data-nombre="${persona.nombre_completo}">
+                ${persona.nombre_completo} ${persona.documento_identidad ? `(${persona.documento_identidad})` : ''}
+              </div>
+            `).join('');
+            resultadosDiv.classList.remove('hidden');
+          } else {
+            resultadosDiv.innerHTML = '<div class="p-2 text-gray-500">No se encontraron personas</div>';
+            resultadosDiv.classList.remove('hidden');
+          }
+        } catch (error) {
+          console.error('Error al buscar personas:', error);
+          resultadosDiv.innerHTML = '<div class="p-2 text-red-500">Error al buscar personas</div>';
+          resultadosDiv.classList.remove('hidden');
+        }
+      }
+
+      // Evento de búsqueda con debounce
+      personaBuscar?.addEventListener('input', (e) => {
+        clearTimeout(timeoutId);
+        const termino = e.target.value.trim();
+        
+        if (termino === '') {
+          resultadosDiv.classList.add('hidden');
+          personaIdInput.value = '';
+          personaSeleccionadaDiv.classList.add('hidden');
+          return;
+        }
+        
+        timeoutId = setTimeout(() => buscarPersonas(termino), 300);
+      });
+
+      // Seleccionar persona de los resultados
+      resultadosDiv?.addEventListener('click', (e) => {
+        const personaElement = e.target.closest('[data-id]');
+        if (personaElement) {
+          const personaId = personaElement.getAttribute('data-id');
+          const personaNombre = personaElement.getAttribute('data-nombre');
+          
+          personaIdInput.value = personaId;
+          personaBuscar.value = personaNombre;
+          personaSeleccionadaDiv.innerHTML = `
+            <div class="flex justify-between items-center">
+              <span>Seleccionado: <strong>${personaNombre}</strong></span>
+              <button type="button" id="quitar_persona" class="text-red-500 hover:text-red-700">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+          `;
+          personaSeleccionadaDiv.classList.remove('hidden');
+          resultadosDiv.classList.add('hidden');
+        }
+      });
+
+      // Quitar persona seleccionada
+      document.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'quitar_persona') {
+          personaIdInput.value = '';
+          personaBuscar.value = '';
+          personaSeleccionadaDiv.classList.add('hidden');
+        }
+      });
+
+      // Cerrar resultados al hacer clic fuera
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#persona_buscar') && !e.target.closest('#persona_resultados')) {
+          resultadosDiv.classList.add('hidden');
+        }
+      });
+
+      // Validación básica del formulario
+      const montoInput = form.querySelector('input[name="monto"]');
+      if (!montoInput) {
+        alert('No se pudo encontrar el campo de monto');
+        return;
+      }
+      
+      const monto = parseFloat(montoInput.value);
+      if (isNaN(monto) || monto <= 0) {
+        alert('El monto debe ser mayor a 0');
+        return;
+      }
+
+      // Enviar formulario
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        try {
+          const formData = new FormData(form);
+          
+          const response = await fetch(`${window.location.origin}/api/contabilidad/transacciones`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.redirected) {
+            window.location.href = response.url;
+          } else {
+            const result = await response.json();
+            if (result.error) {
+              throw new Error(result.error);
+            }
+          }
+        } catch (error) {
+          console.error('Error al enviar el formulario:', error);
+          if (error instanceof Error) {
+            alert('Error al registrar la transacción: ' + error.message);
+          } else {
+            alert('Error desconocido al registrar la transacción');
+          }
+        }
+      });
+    });
+  </script>
+
+  <style>
+    /* Tailwind está configurado en global.css, estos son solo ajustes */
+    input, select, textarea {
+      border-color: #d1d5db; /* Tailwind gray-300 */
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #3b82f6; /* Tailwind blue-500 */
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+  </style>
+</Layout>
