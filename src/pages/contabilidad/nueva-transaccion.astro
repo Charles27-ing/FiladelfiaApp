@@ -63,154 +63,275 @@ const errorMessage = url.searchParams.get('error');
 ---
 
 <Layout title="Registrar Nueva Transacción">
-  <div class="max-w-2xl mx-auto p-4">
-    <h1 class="text-2xl font-bold mb-6">Registrar Nueva Transacción</h1>
+  <div class="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-md">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">Registrar Nueva Transacción</h1>
+      <a href="/contabilidad/transacciones" class="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Volver a transacciones
+      </a>
+    </div>
 
-    <!-- Mostrar mensajes de éxito o error -->
+    <!-- Mensajes de éxito/error -->
     {successMessage && (
-      <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-        {successMessage}
+      <div class="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium">{successMessage}</p>
+          </div>
+        </div>
       </div>
     )}
     
     {errorMessage && (
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        {errorMessage}
+      <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium">{errorMessage}</p>
+          </div>
+        </div>
       </div>
     )}
-    
-    {error ? (
-      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-        {error}
-      </div>
-    ) : (
-      <form id="transaccion-form" method="POST" action="/api/contabilidad/transacciones" class="space-y-4">
-        <!-- Campo de búsqueda de persona -->
-        <div class="relative">
-          <label for="persona_buscar" class="block text-sm font-medium text-gray-700 mb-1">
-            Buscar Persona (opcional)
-          </label>
+
+    <form id="transaccion-form" method="POST" action="/api/contabilidad/transacciones" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Columna Izquierda -->
+        <div class="space-y-6">
+          <!-- Búsqueda de persona -->
           <div class="relative">
-            <input 
-              type="text" 
-              id="persona_buscar" 
-              name="persona_buscar" 
-              placeholder="Buscar por nombre o documento..." 
-              class="w-full p-2 border rounded-md pr-10"
-              autocomplete="off"
-            />
-            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            <label for="persona_buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar Persona</label>
+            <div class="relative">
+              <input 
+                type="text" 
+                id="persona_buscar" 
+                name="persona_buscar" 
+                placeholder="Nombre o documento..." 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                autocomplete="off"
+              />
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+            <input type="hidden" id="persona_id" name="persona_id" value="" />
+            <div id="persona_resultados" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto text-sm"></div>
+            <div id="persona_seleccionada" class="mt-2 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm hidden"></div>
+          </div>
+
+          <!-- Fecha y Tipo -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
+              <input 
+                type="date" 
+                id="fecha" 
+                name="fecha" 
+                required 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+            <div>
+              <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+              <select 
+                id="tipo" 
+                name="tipo" 
+                required 
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+              >
+                <option value="ingreso">Ingreso</option>
+                <option value="egreso">Egreso</option>
+              </select>
             </div>
           </div>
-          <input type="hidden" id="persona_id" name="persona_id" value="" />
-          <div id="persona_resultados" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-            <!-- Los resultados de la búsqueda se cargarán aquí -->
+
+          <!-- Monto -->
+          <div>
+            <label for="monto" class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+            <div class="relative rounded-md shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-gray-500 sm:text-sm">$</span>
+              </div>
+              <input 
+                type="number" 
+                id="monto" 
+                name="monto" 
+                step="0.01" 
+                min="0.01" 
+                required 
+                class="focus:ring-blue-500 focus:border-blue-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 border"
+                placeholder="0.00"
+              />
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <span class="text-gray-500 sm:text-sm">COP</span>
+              </div>
+            </div>
           </div>
-          <div id="persona_seleccionada" class="mt-2 p-2 bg-gray-50 rounded hidden">
-            <!-- Se muestra cuando se selecciona una persona -->
-          </div>
         </div>
 
-        <div>
-          <label for="fecha" class="block text-sm font-medium text-gray-700">Fecha</label>
-          <input type="date" id="fecha" name="fecha" required class="mt-1 block w-full border rounded-md p-2" />
-        </div>
-
-        <div>
-          <label for="monto" class="block text-sm font-medium text-gray-700">Monto</label>
-          <input type="number" id="monto" name="monto" step="0.01" min="0.01" required class="mt-1 block w-full border rounded-md p-2" />
-        </div>
-
-        <div>
-          <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
-          <select id="tipo" name="tipo" required class="mt-1 block w-full border rounded-md p-2">
-            <option value="ingreso">Ingreso</option>
-            <option value="egreso">Egreso</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="categoria_id" class="block text-sm font-medium text-gray-700">Categoría</label>
-          {categorias.length > 0 ? (
-            <select id="categoria_id" name="categoria_id" required class="mt-1 block w-full border rounded-md p-2">
+        <!-- Columna Derecha -->
+        <div class="space-y-4">
+          <!-- Categoría -->
+          <div>
+            <label for="categoria_id" class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <select 
+              id="categoria_id" 
+              name="categoria_id" 
+              required 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+            >
               <option value="">Seleccione una categoría</option>
               {categorias.map((cat: Categoria) => (
                 <option value={cat.id}>
-                  {cat.nombre} ({cat.tipo})
+                  {cat.nombre} ({cat.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'})
                 </option>
               ))}
             </select>
-          ) : (
-            <p class="text-red-500 text-sm">No hay categorías disponibles</p>
-          )}
-        </div>
+          </div>
 
-        <div>
-          <label for="actividad_id" class="block text-sm font-medium text-gray-700">Actividad (opcional)</label>
-          <select id="actividad_id" name="actividad_id" class="mt-1 block w-full border rounded-md p-2">
-            <option value="">Ninguna</option>
-            {actividades.map((act: Actividad) => (
-              <option value={act.id}>{act.nombre}</option>
-            ))}
-          </select>
-        </div>
+          <!-- Actividad -->
+          <div>
+            <label for="actividad_id" class="block text-sm font-medium text-gray-700 mb-1">Actividad (opcional)</label>
+            <select 
+              id="actividad_id" 
+              name="actividad_id" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
+            >
+              <option value="">Ninguna</option>
+              {actividades.map((act: Actividad) => (
+                <option value={act.id}>{act.nombre}</option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
-          <textarea id="descripcion" name="descripcion" class="mt-1 block w-full border rounded-md p-2"></textarea>
-        </div>
+          <!-- Descripción -->
+          <div>
+            <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea 
+              id="descripcion" 
+              name="descripcion" 
+              rows="3"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              placeholder="Detalles de la transacción..."
+            ></textarea>
+          </div>
 
-        <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+          <!-- Evidencia -->
+          <div>
+            <label for="evidencia" class="block text-sm font-medium text-gray-700 mb-1">URL de evidencia (opcional)</label>
+            <div class="mt-1 flex rounded-md shadow-sm">
+              <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                https://
+              </span>
+              <input 
+                type="text" 
+                id="evidencia" 
+                name="evidencia" 
+                class="focus:ring-blue-500 focus:border-blue-500 flex-1 block w-full rounded-none rounded-r-md sm:text-sm border-gray-300 py-2 px-3 border"
+                placeholder="ejemplo.com/recibo"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botón de envío -->
+      <div class="pt-4 border-t border-gray-200">
+        <button 
+          type="submit" 
+          class="w-full md:w-auto flex justify-center items-center px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
           Registrar Transacción
         </button>
-      </form>
-    )}
+      </div>
+    </form>
   </div>
 
-  <script is:inline>
-    document.addEventListener('DOMContentLoaded', () => {
+  <script>
+    // Importar jsPDF desde un CDN
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Cargar jsPDF dinámicamente
+      const jsPDFModule = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+      const { jsPDF } = jsPDFModule;
+      
       const form = document.getElementById('transaccion-form');
       const personaBuscar = document.getElementById('persona_buscar');
-      const personaIdInput = document.getElementById('persona_id');
       const resultadosDiv = document.getElementById('persona_resultados');
+      const personaIdInput = document.getElementById('persona_id');
       const personaSeleccionadaDiv = document.getElementById('persona_seleccionada');
-      
       let timeoutId;
 
-      // Función para buscar personas
-      async function buscarPersonas(termino) {
-        if (termino.length < 2) {
-          resultadosDiv.classList.add('hidden');
-          return;
-        }
+      // Formatear moneda
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat('es-CO', { 
+          style: 'currency', 
+          currency: 'COP',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount);
+      }
 
+      // Formatear fecha
+      function formatDate(dateString) {
+        const options = { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          timeZone: 'America/Bogota'
+        };
+        return new Date(dateString).toLocaleDateString('es-CO', options);
+      }
+
+      // Buscar personas
+      async function buscarPersonas(termino) {
         try {
-          const response = await fetch(`${window.location.origin}/api/personas/buscar?q=${encodeURIComponent(termino)}`);
-          const personas = await response.json();
-          
-          if (personas.length > 0) {
-            resultadosDiv.innerHTML = personas.map(persona => `
-              <div class="p-2 hover:bg-gray-100 cursor-pointer" data-id="${persona.id}" data-nombre="${persona.nombre_completo}">
-                ${persona.nombre_completo} ${persona.documento_identidad ? `(${persona.documento_identidad})` : ''}
-              </div>
-            `).join('');
-            resultadosDiv.classList.remove('hidden');
-          } else {
-            resultadosDiv.innerHTML = '<div class="p-2 text-gray-500">No se encontraron personas</div>';
-            resultadosDiv.classList.remove('hidden');
+          if (termino.length < 2) {
+            resultadosDiv.classList.add('hidden');
+            return;
           }
+          
+          const response = await fetch(`/api/personas/buscar?q=${encodeURIComponent(termino)}`);
+          if (!response.ok) throw new Error('Error al buscar personas');
+          
+          const personas = await response.json();
+          resultadosDiv.innerHTML = personas.length > 0
+            ? personas.map(persona => `
+                <div class="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0" 
+                     data-id="${persona.id}" 
+                     data-nombre="${persona.nombre_completo}">
+                  <div class="font-medium">${persona.nombre_completo}</div>
+                  ${persona.documento_identidad ? `<div class="text-xs text-gray-500">${persona.documento_identidad}</div>` : ''}
+                </div>
+              `).join('')
+            : '<div class="p-3 text-center text-gray-500 text-sm">No se encontraron personas</div>';
+          resultadosDiv.classList.remove('hidden');
         } catch (error) {
           console.error('Error al buscar personas:', error);
-          resultadosDiv.innerHTML = '<div class="p-2 text-red-500">Error al buscar personas</div>';
+          resultadosDiv.innerHTML = '<div class="p-3 text-center text-red-500 text-sm">Error al buscar personas</div>';
           resultadosDiv.classList.remove('hidden');
         }
       }
 
       // Evento de búsqueda con debounce
-      personaBuscar?.addEventListener('input', (e) => {
+      personaBuscar.addEventListener('input', (e) => {
         clearTimeout(timeoutId);
         const termino = e.target.value.trim();
         
@@ -224,8 +345,8 @@ const errorMessage = url.searchParams.get('error');
         timeoutId = setTimeout(() => buscarPersonas(termino), 300);
       });
 
-      // Seleccionar persona de los resultados
-      resultadosDiv?.addEventListener('click', (e) => {
+      // Seleccionar persona
+      resultadosDiv.addEventListener('click', (e) => {
         const personaElement = e.target.closest('[data-id]');
         if (personaElement) {
           const personaId = personaElement.getAttribute('data-id');
@@ -233,16 +354,22 @@ const errorMessage = url.searchParams.get('error');
           
           personaIdInput.value = personaId;
           personaBuscar.value = personaNombre;
+          
           personaSeleccionadaDiv.innerHTML = `
             <div class="flex justify-between items-center">
-              <span>Seleccionado: <strong>${personaNombre}</strong></span>
-              <button type="button" id="quitar_persona" class="text-red-500 hover:text-red-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <div>
+                <span class="font-medium">${personaNombre}</span>
+                ${personaElement.querySelector('.text-gray-500') ? 
+                  `<div class="text-xs text-gray-500">${personaElement.querySelector('.text-gray-500').textContent}</div>` : ''}
+              </div>
+              <button type="button" id="quitar_persona" class="text-gray-400 hover:text-red-500 transition-colors">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           `;
+          
           personaSeleccionadaDiv.classList.remove('hidden');
           resultadosDiv.classList.add('hidden');
         }
@@ -250,7 +377,7 @@ const errorMessage = url.searchParams.get('error');
 
       // Quitar persona seleccionada
       document.addEventListener('click', (e) => {
-        if (e.target && e.target.id === 'quitar_persona') {
+        if (e.target.closest('#quitar_persona')) {
           personaIdInput.value = '';
           personaBuscar.value = '';
           personaSeleccionadaDiv.classList.add('hidden');
@@ -264,60 +391,283 @@ const errorMessage = url.searchParams.get('error');
         }
       });
 
-      // Validación básica del formulario
-      const montoInput = form.querySelector('input[name="monto"]');
-      if (!montoInput) {
-        alert('No se pudo encontrar el campo de monto');
-        return;
-      }
-      
-      const monto = parseFloat(montoInput.value);
-      if (isNaN(monto) || monto <= 0) {
-        alert('El monto debe ser mayor a 0');
-        return;
-      }
-
       // Enviar formulario
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
+        const submitButton = form.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.innerHTML;
         
         try {
+          // Mostrar estado de carga
+          submitButton.disabled = true;
+          submitButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Procesando...
+          `;
+
+          // Validación de monto
+          const montoInput = form.querySelector('input[name="monto"]');
+          const monto = parseFloat(montoInput.value);
+          if (!montoInput.value || isNaN(monto) || monto <= 0) {
+            throw new Error('El monto debe ser mayor a 0');
+          }
+
           const formData = new FormData(form);
-          
           const response = await fetch(`${window.location.origin}/api/contabilidad/transacciones`, {
             method: 'POST',
             body: formData,
           });
 
-          if (response.redirected) {
-            window.location.href = response.url;
-          } else {
-            const result = await response.json();
-            if (result.error) {
-              throw new Error(result.error);
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Error al registrar la transacción');
+          }
+
+          // Generar PDF
+          const doc = new jsPDF.default();
+          
+          // Estilos
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(18);
+          doc.setTextColor(31, 41, 55); // gray-800
+          doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
+          
+          // Línea decorativa
+          doc.setDrawColor(59, 130, 246); // blue-500
+          doc.setLineWidth(0.5);
+          doc.line(20, 25, 190, 25);
+          
+          // Información de la transacción
+          doc.setFontSize(10);
+          doc.setTextColor(75, 85, 99); // gray-600
+          
+          // Fecha y Número de transacción
+          doc.setFont('helvetica', 'bold');
+          doc.text('Fecha:', 20, 40);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formatDate(formData.get('fecha')), 60, 40);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text('N° Transacción:', 120, 40);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`#${Date.now().toString().slice(-6)}`, 160, 40);
+          
+          // Tipo y Monto
+          doc.setFont('helvetica', 'bold');
+          doc.text('Tipo:', 20, 50);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formData.get('tipo') === 'ingreso' ? 'Ingreso' : 'Egreso', 60, 50);
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text('Monto:', 120, 50);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(22, 163, 74); // green-600
+          doc.text(formatCurrency(monto), 160, 50);
+          
+          // Categoría y Actividad
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(75, 85, 99);
+          doc.text('Categoría:', 20, 65);
+          doc.setFont('helvetica', 'normal');
+          doc.text(
+            document.querySelector(`#categoria_id option[value="${formData.get('categoria_id')}"]`)?.textContent || 'N/A', 
+            60, 
+            65
+          );
+          
+          doc.setFont('helvetica', 'bold');
+          doc.text('Actividad:', 20, 75);
+          doc.setFont('helvetica', 'normal');
+          const actividadId = formData.get('actividad_id');
+          doc.text(
+            actividadId ? 
+              document.querySelector(`#actividad_id option[value="${actividadId}"]`)?.textContent : 'N/A', 
+            60, 
+            75
+          );
+          
+          // Persona
+          doc.setFont('helvetica', 'bold');
+          doc.text('Persona:', 20, 85);
+          doc.setFont('helvetica', 'normal');
+          doc.text(formData.get('persona_buscar') || 'No especificada', 60, 85);
+          
+          // Descripción
+          const descripcion = formData.get('descripcion');
+          if (descripcion) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('Descripción:', 20, 100);
+            doc.setFont('helvetica', 'normal');
+            
+            // Dividir el texto en líneas que quepan en el ancho del PDF
+            const maxWidth = 160;
+            const lineHeight = 5;
+            let y = 105;
+            
+            // Función para dividir texto en líneas
+            const splitText = (text, maxWidth) => {
+              const words = text.split(' ');
+              const lines = [];
+              let currentLine = words[0];
+              
+              for (let i = 1; i < words.length; i++) {
+                const word = words[i];
+                const width = doc.getTextWidth(currentLine + ' ' + word);
+                
+                if (width < maxWidth) {
+                  currentLine += ' ' + word;
+                } else {
+                  lines.push(currentLine);
+                  currentLine = word;
+                }
+              }
+              
+              lines.push(currentLine);
+              return lines;
+            };
+            
+            const lines = splitText(descripcion, maxWidth);
+            
+            // Mostrar las líneas (máximo 10 para no salir de la página)
+            const maxLines = Math.min(lines.length, 10);
+            for (let i = 0; i < maxLines; i++) {
+              doc.text(lines[i], 25, y);
+              y += lineHeight;
+              
+              // Si nos acercamos al final de la página, crear una nueva
+              if (y > 270 && i < lines.length - 1) {
+                doc.addPage();
+                y = 20;
+              }
             }
           }
+          
+          // Pie de página
+          doc.setFontSize(8);
+          doc.setTextColor(156, 163, 175); // gray-400
+          doc.text('Documento generado automáticamente', 105, 290, { align: 'center' });
+          
+          // Guardar PDF
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          doc.save(`transaccion_${timestamp}.pdf`);
+
+          // Redirigir con mensaje de éxito
+          window.location.href = '/contabilidad/transacciones?success=Transacción registrada exitosamente';
+          
         } catch (error) {
           console.error('Error al enviar el formulario:', error);
-          if (error instanceof Error) {
-            alert('Error al registrar la transacción: ' + error.message);
-          } else {
-            alert('Error desconocido al registrar la transacción');
-          }
+          
+          // Mostrar mensaje de error
+          const errorDiv = document.createElement('div');
+          errorDiv.className = 'bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded';
+          errorDiv.innerHTML = `
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm font-medium">${error.message || 'Error al procesar la transacción'}</p>
+              </div>
+            </div>
+          `;
+          
+          // Insertar el mensaje de error antes del formulario
+          form.parentNode.insertBefore(errorDiv, form);
+          
+          // Hacer scroll al mensaje de error
+          errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          
+        } finally {
+          // Restaurar el botón
+          submitButton.disabled = false;
+          submitButton.innerHTML = originalButtonText;
         }
       });
+      
+      // Establecer fecha actual por defecto
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('fecha').value = today;
+      
+      // Filtrar categorías según el tipo de transacción
+      const tipoSelect = document.getElementById('tipo');
+      const categoriaSelect = document.getElementById('categoria_id');
+      
+      function filtrarCategorias() {
+        const tipo = tipoSelect.value;
+        const categorias = Array.from(categoriaSelect.options);
+        
+        // Mostrar/ocultar opciones según el tipo
+        categorias.forEach(option => {
+          if (option.value === '') return; // No ocultar la opción por defecto
+          
+          const optionTipo = option.textContent.includes('(ingreso)') ? 'ingreso' : 
+                            option.textContent.includes('(egreso)') ? 'egreso' : '';
+          
+          if (optionTipo && optionTipo !== tipo) {
+            option.style.display = 'none';
+            if (option.selected) option.selected = false;
+          } else {
+            option.style.display = '';
+          }
+        });
+        
+        // Seleccionar la primera opción disponible si la actual no es válida
+        if (categoriaSelect.selectedIndex === -1 || !categoriaSelect.options[categoriaSelect.selectedIndex].value) {
+          const firstVisible = Array.from(categoriaSelect.options).find(opt => opt.value && opt.style.display !== 'none');
+          if (firstVisible) firstVisible.selected = true;
+        }
+      }
+      
+      // Filtrar categorías al cargar la página y cuando cambie el tipo
+      filtrarCategorias();
+      tipoSelect.addEventListener('change', filtrarCategorias);
     });
   </script>
 
   <style>
-    /* Tailwind está configurado en global.css, estos son solo ajustes */
-    input, select, textarea {
-      border-color: #d1d5db; /* Tailwind gray-300 */
+    /* Estilos personalizados */
+    #persona_resultados {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      z-index: 50;
     }
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #3b82f6; /* Tailwind blue-500 */
-      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    
+    #persona_resultados div {
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      transition: background-color 150ms ease-in-out;
+    }
+    
+    #persona_resultados div:hover {
+      background-color: #f3f4f6;
+    }
+    
+    #persona_resultados div:not(:last-child) {
+      border-bottom: 1px solid #f3f4f6;
+    }
+    
+    /* Estilo para el input de búsqueda cuando hay resultados */
+    #persona_buscar:focus + #persona_resultados {
+      display: block;
+    }
+    
+    /* Mejoras de accesibilidad para el foco */
+    input:focus, select:focus, textarea:focus, button:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    /* Transiciones suaves */
+    input, select, textarea, button {
+      transition: all 150ms ease-in-out;
     }
   </style>
 </Layout>

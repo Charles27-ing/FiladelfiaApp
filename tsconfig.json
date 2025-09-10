@@ -24,7 +24,7 @@
     "src/**/*.tsx",
     "src/**/*.astro",
     ".astro/types.d.ts"
-  ],
+, "src/scripts/transacciones-filters.js"  ],
   "exclude": [
     // Es bueno mantener 'dist' y 'node_modules' aquí por si acaso
     "dist", 

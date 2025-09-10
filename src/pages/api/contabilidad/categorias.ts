@@ -30,7 +30,7 @@ export const GET: APIRoute = async () => {
 };
 
 export const POST: APIRoute = async ({ request, redirect }) => {
-  console.log("--- [API /api/contabilidad/categorias] Petición POST recibida ---");
+ // console.log("--- [API /api/contabilidad/categorias] Petición POST recibida ---");
 
   try {
     // 1. Autenticación

@@ -10,7 +10,14 @@ export const GET: APIRoute = async ({ url }) => {
       return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
     }
 
-    let query = supabase.from('transacciones').select('*');
+    let query = supabase
+      .from('transacciones')
+      .select(`
+        *,
+        categorias (nombre, tipo),
+        actividades (nombre),
+        persona (nombres, primer_apellido, segundo_apellido)
+      `);
     const actividadId = new URL(url).searchParams.get('actividad_id');
     if (actividadId) {
       query = query.eq('actividad_id', actividadId);
@@ -18,15 +25,26 @@ export const GET: APIRoute = async ({ url }) => {
 
     const { data, error } = await query;
     if (error) {
+      console.error('Error al cargar transacciones:', error);
       return new Response(JSON.stringify({ error: 'Error al cargar transacciones' }), { status: 500 });
     }
 
-    console.log("[API] Transacciones cargadas:", data?.length || 0);
-    return new Response(JSON.stringify(data), {
+    const formattedData = data.map(transaccion => ({
+      ...transaccion,
+      categoria_nombre: transaccion.categorias?.nombre || 'Sin categoría',
+      actividad_nombre: transaccion.actividades?.nombre || null,
+      persona_nombre: transaccion.persona
+        ? [transaccion.persona.nombres, transaccion.persona.primer_apellido, transaccion.persona.segundo_apellido]
+            .filter(Boolean)
+            .join(' ')
+        : null
+    }));
+
+    console.log("[API] Transacciones cargadas:", formattedData.length);
+    return new Response(JSON.stringify(formattedData), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
-
   } catch (error) {
     console.error("[API] Error inesperado en GET:", error);
     return new Response(JSON.stringify({ error: 'Error interno' }), { status: 500 });
@@ -34,16 +52,15 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request, redirect }) => {
+  // Código POST existente (sin cambios)
   console.log("--- [API /api/contabilidad/transacciones] Petición POST recibida ---");
 
   try {
-    // 1. Autenticación
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
-    // 2. Datos
     const formData = await request.formData();
     const fecha = formData.get('fecha')?.toString();
     const monto = parseFloat(formData.get('monto')?.toString() || '0');
@@ -51,17 +68,26 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const categoria_id = formData.get('categoria_id')?.toString();
     const descripcion = formData.get('descripcion')?.toString() || null;
     const actividad_id = formData.get('actividad_id')?.toString() || null;
-    const evidencia = formData.get('evidencia')?.toString() || null;  // URL de storage
+    const evidencia = formData.get('evidencia')?.toString() || null;
+    const persona_id = formData.get('persona_id')?.toString() || null;
 
-    // 3. Validación
     if (!fecha || monto <= 0 || !tipo || !categoria_id || !['ingreso', 'egreso'].includes(tipo)) {
       return redirect('/contabilidad?error=' + encodeURIComponent('Datos inválidos: revise fecha, monto, tipo y categoría'));
     }
 
-    // 4. Inserción
     const { data, error: insertError } = await supabase
       .from('transacciones')
-      .insert([{ fecha, monto, tipo, categoria_id, descripcion, actividad_id, user_id: user.id, evidencia }])
+      .insert([{ 
+        fecha, 
+        monto, 
+        tipo, 
+        categoria_id, 
+        descripcion, 
+        actividad_id, 
+        user_id: user.id, 
+        evidencia,
+        persona_id
+      }])
       .select()
       .single();
 
