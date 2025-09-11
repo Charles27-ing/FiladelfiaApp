@@ -58,6 +58,10 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      const wantsJson = request.headers.get('accept')?.includes('application/json');
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: 'Debe iniciar sesión para continuar' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+      }
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
@@ -93,15 +97,29 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     if (insertError) {
       console.error("[API] Error al insertar transacción:", insertError);
+      const wantsJson = request.headers.get('accept')?.includes('application/json');
+      if (wantsJson) {
+        return new Response(JSON.stringify({ error: 'Error al guardar la transacción' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+      }
       return redirect('/contabilidad?error=' + encodeURIComponent('Error al guardar la transacción'));
     }
 
     console.log("[API] Transacción insertada exitosamente:", data.id);
-
+    const wantsJson = request.headers.get('accept')?.includes('application/json');
+    if (wantsJson) {
+      return new Response(JSON.stringify({ success: true, transaccion: data }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
     return redirect('/contabilidad?success=' + encodeURIComponent('Transacción registrada exitosamente ✅'));
 
   } catch (error) {
     console.error("[API] Error inesperado:", error);
+    const wantsJson = request.headers.get('accept')?.includes('application/json');
+    if (wantsJson) {
+      return new Response(JSON.stringify({ error: 'Error al registrar la transacción' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
     return redirect('/contabilidad?error=' + encodeURIComponent('Error al registrar la transacción'));
   }
 };

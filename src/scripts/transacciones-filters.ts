@@ -1,4 +1,12 @@
 // src/scripts/transacciones-filters.ts
+// Importación correcta
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
+
+// Uso
+const doc = new jsPDF();
+// doc.save('documento.pdf');
 
 interface Transaccion {
     id: string;
@@ -45,6 +53,8 @@ interface Transaccion {
     const paginationFrom = document.getElementById('pagination-from') as HTMLElement;
     const paginationTo = document.getElementById('pagination-to') as HTMLElement;
     const paginationTotal = document.getElementById('pagination-total') as HTMLElement;
+    const exportExcelButton = document.getElementById('export-excel-all') as HTMLButtonElement | null;
+    const exportPdfButton = document.getElementById('export-pdf-all') as HTMLButtonElement | null;
   
     // Validar elementos del DOM
     if (!transaccionesContainer || !transaccionesContainerMobile) {
@@ -64,13 +74,13 @@ interface Transaccion {
     // Renderizar transacciones
     function renderTransacciones() {
       console.log('Renderizando transacciones:', currentTransacciones.length);
-      const totalPages = Math.ceil(currentTransacciones.length / itemsPerPage);
+      const totalPages = Math.ceil(currentTransacciones.length / itemsPerPage) || 1;
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = Math.min(startIndex + itemsPerPage, currentTransacciones.length);
       const paginatedTransacciones = currentTransacciones.slice(startIndex, endIndex);
   
       // Actualizar paginación
-      paginationFrom.textContent = startIndex + 1 + '';
+      paginationFrom.textContent = currentTransacciones.length > 0 ? (startIndex + 1) + '' : '0';
       paginationTo.textContent = endIndex + '';
       paginationTotal.textContent = currentTransacciones.length + '';
       prevBtn.disabled = currentPage === 1;
@@ -87,9 +97,12 @@ interface Transaccion {
               <td class="px-6 py-4">${t.actividad_nombre || 'N/A'}</td>
               <td class="px-6 py-4">${t.persona_nombre || 'N/A'}</td>
               <td class="px-6 py-4">${t.descripcion || ''}</td>
+              <td class="px-6 py-4 text-right">
+                <a href="/contabilidad/transacciones/${t.id}" class="text-blue-600 hover:underline">Ver</a>
+              </td>
             </tr>
           `).join('')
-        : `<tr><td colspan="7" class="px-6 py-4 text-center">No hay transacciones para mostrar</td></tr>`;
+        : `<tr><td colspan="8" class="px-6 py-4 text-center">No hay transacciones para mostrar</td></tr>`;
   
       // Tarjetas Móvil
       transaccionesContainerMobile.innerHTML = paginatedTransacciones.length > 0
@@ -102,6 +115,9 @@ interface Transaccion {
               <p><strong>Actividad:</strong> ${t.actividad_nombre || 'N/A'}</p>
               <p><strong>Persona:</strong> ${t.persona_nombre || 'N/A'}</p>
               <p><strong>Descripción:</strong> ${t.descripcion || ''}</p>
+              <div class="mt-2">
+                <a href="/contabilidad/transacciones/${t.id}" class="text-blue-600 hover:underline">Ver</a>
+              </div>
             </div>
           `).join('')
         : `<div class="p-4 text-center">No hay transacciones para mostrar</div>`;
@@ -154,6 +170,121 @@ interface Transaccion {
       renderTransacciones();
     }
   
+    // Exportar a Excel (con fallback)
+    async function exportToExcel(transacciones: Transaccion[]) {
+      try {
+        let XLSX: any;
+        try {
+          // @ts-ignore - import dinámico en runtime
+          XLSX = await import('xlsx');
+        } catch (_) {
+          // @ts-ignore - import desde CDN sin tipos
+          XLSX = await import('https://cdn.sheetjs.com/xlsx-0.19.3/package/xlsx.mjs');
+        }
+        const wb = XLSX.utils.book_new();
+        const wsData = transacciones.map(t => ({
+          'Fecha': new Date(t.fecha).toLocaleDateString('es-CO'),
+          'Monto': t.monto,
+          'Tipo': t.tipo === 'ingreso' ? 'Ingreso' : 'Egreso',
+          'Categoría': t.categoria_nombre || 'N/A',
+          'Actividad': t.actividad_nombre || 'N/A',
+          'Persona': t.persona_nombre || 'N/A',
+          'Descripción': t.descripcion || ''
+        }));
+        const ws = XLSX.utils.json_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Transacciones');
+        const totalIngresos = transacciones.filter(t => t.tipo === 'ingreso').reduce((sum: number, t) => sum + t.monto, 0);
+        const totalEgresos = transacciones.filter(t => t.tipo === 'egreso').reduce((sum: number, t) => sum + t.monto, 0);
+        const neto = totalIngresos - totalEgresos;
+        const resumenData = [
+          ['RESUMEN DE TRANSACCIONES', ''],
+          ['', ''],
+          ['Filtros aplicados:', ''],
+          ['Fecha inicio', fechaInicioFilter.value || 'No especificado'],
+          ['Fecha fin', fechaFinFilter.value || 'No especificado'],
+          ['Actividad', actividadFilter.value ? 
+            (initialActividades.find(a => a.id === actividadFilter.value)?.nombre || 'N/A') : 'Todas'],
+          ['', ''],
+          ['TOTALES', ''],
+          ['Total Ingresos', totalIngresos],
+          ['Total Egresos', totalEgresos],
+          ['Neto', neto]
+        ];
+        const wsResumen = XLSX.utils.aoa_to_sheet(resumenData);
+        ws['!cols'] = [
+          { wch: 15 },
+          { wch: 15 },
+          { wch: 15 },
+          { wch: 20 },
+          { wch: 20 },
+          { wch: 20 },
+          { wch: 40 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen');
+        const fechaInicio = fechaInicioFilter.value || 'inicio';
+        const fechaFin = fechaFinFilter.value || 'hoy';
+        XLSX.writeFile(wb, `transacciones_${fechaInicio}_a_${fechaFin}.xlsx`);
+      } catch (error) {
+        console.error('Error al exportar a Excel. Intentando CSV como fallback:', error);
+        exportToCSV(transacciones);
+      }
+    }
+  
+    function exportToCSV(transacciones: Transaccion[]) {
+      const headers = ['Fecha','Monto','Tipo','Categoría','Actividad','Persona','Descripción'];
+      const rows = transacciones.map(t => [
+        new Date(t.fecha).toLocaleDateString('es-CO'),
+        t.monto,
+        t.tipo,
+        t.categoria_nombre || 'N/A',
+        t.actividad_nombre || 'N/A',
+        t.persona_nombre || 'N/A',
+        (t.descripcion || '').replace(/\n|\r/g, ' ')
+      ]);
+      const csvContent = [headers, ...rows].map(r => r.map(v => typeof v === 'string' && v.includes(',') ? `"${v.replace(/"/g, '""')}"` : v).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'transacciones.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+  
+    // Exportar a PDF
+    async function exportToPDF(transacciones: Transaccion[]) {
+      try {
+        const doc = new jsPDF();
+        const headers = [['Fecha', 'Monto', 'Tipo', 'Categoría', 'Actividad', 'Persona', 'Descripción']];
+        
+        const data = transacciones.map(t => [
+          new Date(t.fecha).toLocaleDateString('es-CO'),
+          new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(t.monto),
+          t.tipo,
+          t.categoria_nombre || 'N/A',
+          t.actividad_nombre || 'N/A',
+          t.persona_nombre || 'N/A',
+          t.descripcion || ''
+        ]);
+    
+        // Usa autoTable directamente del import
+        autoTable(doc, {
+          head: headers,
+          body: data,
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [41, 128, 185] }
+        });
+    
+        doc.save('transacciones.pdf');
+      } catch (error) {
+        console.error('Error al exportar a PDF:', error);
+        alert('Error al generar el PDF: ' + (error as Error).message);
+      }
+    }
+  
     // Inicializar eventos
     actividadFilter.addEventListener('change', applyFilters);
     searchButton.addEventListener('click', applyFilters);
@@ -172,10 +303,18 @@ interface Transaccion {
     });
   
     nextBtn.addEventListener('click', () => {
-      if (currentPage < Math.ceil(currentTransacciones.length / itemsPerPage)) {
+      const totalPages = Math.ceil(currentTransacciones.length / itemsPerPage) || 1;
+      if (currentPage < totalPages) {
         currentPage++;
         renderTransacciones();
       }
+    });
+  
+    exportExcelButton?.addEventListener('click', () => {
+      exportToExcel(currentTransacciones);
+    });
+    exportPdfButton?.addEventListener('click', () => {
+      exportToPDF(currentTransacciones);
     });
   
     // Render inicial

@@ -1,4 +1,5 @@
 ---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
 import Layout from '../../layouts/Layout.astro';
 
 // Definición de tipos
@@ -37,7 +38,7 @@ try {
   
   if (categoriasRes.ok) {
     const categoriasData = await categoriasRes.json();
-    console.log('Respuesta de categorías:', categoriasData);
+    //console.log('Respuesta de categorías:', categoriasData);
     categorias = categoriasData;
   } else {
     const errorText = await categoriasRes.text();
@@ -62,7 +63,7 @@ const successMessage = url.searchParams.get('success');
 const errorMessage = url.searchParams.get('error');
 ---
 
-<Layout title="Registrar Nueva Transacción">
+<LayoutProtected title="Registrar Nueva Transacción">
   <div class="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-md">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-800">Registrar Nueva Transacción</h1>
@@ -95,7 +96,7 @@ const errorMessage = url.searchParams.get('error');
         <div class="flex">
           <div class="flex-shrink-0">
             <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 0L6 8.586 4.707 7.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
             </svg>
           </div>
           <div class="ml-3">
@@ -195,7 +196,7 @@ const errorMessage = url.searchParams.get('error');
             >
               <option value="">Seleccione una categoría</option>
               {categorias.map((cat: Categoria) => (
-                <option value={cat.id}>
+                <option value={cat.id} data-tipo={cat.tipo}>
                   {cat.nombre} ({cat.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'})
                 </option>
               ))}
@@ -252,7 +253,7 @@ const errorMessage = url.searchParams.get('error');
       <div class="pt-4 border-t border-gray-200">
         <button 
           type="submit" 
-          class="w-full md:w-auto flex justify-center items-center px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+          class="w-full md:w-auto flex justify-center items-center px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
         >
           <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
@@ -264,21 +265,25 @@ const errorMessage = url.searchParams.get('error');
   </div>
 
   <script>
-    // Importar jsPDF desde un CDN
     document.addEventListener('DOMContentLoaded', async () => {
       // Cargar jsPDF dinámicamente
-      const jsPDFModule = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
-      const { jsPDF } = jsPDFModule;
+     // const { jsPDF } = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
       
       const form = document.getElementById('transaccion-form');
-      const personaBuscar = document.getElementById('persona_buscar');
-      const resultadosDiv = document.getElementById('persona_resultados');
-      const personaIdInput = document.getElementById('persona_id');
-      const personaSeleccionadaDiv = document.getElementById('persona_seleccionada');
-      let timeoutId;
+      const tipoSelect = document.getElementById('tipo') as HTMLSelectElement;
+      const categoriaSelect = document.getElementById('categoria_id') as HTMLSelectElement;
+      const actividadSelect = document.getElementById('actividad_id') as HTMLSelectElement;
+      const personaBuscar = document.getElementById('persona_buscar') as HTMLInputElement;
+      const personaId = document.getElementById('persona_id') as HTMLInputElement;
+      const resultadosDiv = document.getElementById('persona_resultados') as HTMLDivElement;
+      
+      if (!form || !tipoSelect || !categoriaSelect || !actividadSelect || !personaBuscar || !personaId || !resultadosDiv) {
+        console.error('No se encontraron todos los elementos necesarios');
+        return;
+      }
 
-      // Formatear moneda
-      function formatCurrency(amount) {
+      // Función para formatear moneda
+      function formatCurrency(amount: number): string {
         return new Intl.NumberFormat('es-CO', { 
           style: 'currency', 
           currency: 'COP',
@@ -287,275 +292,165 @@ const errorMessage = url.searchParams.get('error');
         }).format(amount);
       }
 
-      // Formatear fecha
-      function formatDate(dateString) {
-        const options = { 
+      // Función para formatear fecha
+      function formatDate(dateString: string): string {
+        const options: Intl.DateTimeFormatOptions = { 
           year: 'numeric', 
           month: 'long', 
           day: 'numeric',
           hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'America/Bogota'
+          minute: '2-digit'
         };
         return new Date(dateString).toLocaleDateString('es-CO', options);
       }
 
-      // Buscar personas
-      async function buscarPersonas(termino) {
-        try {
-          if (termino.length < 2) {
-            resultadosDiv.classList.add('hidden');
-            return;
-          }
-          
-          const response = await fetch(`/api/personas/buscar?q=${encodeURIComponent(termino)}`);
-          if (!response.ok) throw new Error('Error al buscar personas');
-          
-          const personas = await response.json();
-          resultadosDiv.innerHTML = personas.length > 0
-            ? personas.map(persona => `
-                <div class="p-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0" 
-                     data-id="${persona.id}" 
-                     data-nombre="${persona.nombre_completo}">
-                  <div class="font-medium">${persona.nombre_completo}</div>
-                  ${persona.documento_identidad ? `<div class="text-xs text-gray-500">${persona.documento_identidad}</div>` : ''}
-                </div>
-              `).join('')
-            : '<div class="p-3 text-center text-gray-500 text-sm">No se encontraron personas</div>';
-          resultadosDiv.classList.remove('hidden');
-        } catch (error) {
-          console.error('Error al buscar personas:', error);
-          resultadosDiv.innerHTML = '<div class="p-3 text-center text-red-500 text-sm">Error al buscar personas</div>';
-          resultadosDiv.classList.remove('hidden');
-        }
-      }
-
-      // Evento de búsqueda con debounce
+      // Manejar búsqueda de personas
+      let searchTimeout: number | null = null;
+      
       personaBuscar.addEventListener('input', (e) => {
-        clearTimeout(timeoutId);
-        const termino = e.target.value.trim();
+        const query = (e.target as HTMLInputElement).value.trim();
         
-        if (termino === '') {
+        if (searchTimeout) {
+          clearTimeout(searchTimeout);
+        }
+        
+        if (query.length < 2) {
+          resultadosDiv.innerHTML = '';
           resultadosDiv.classList.add('hidden');
-          personaIdInput.value = '';
-          personaSeleccionadaDiv.classList.add('hidden');
           return;
         }
         
-        timeoutId = setTimeout(() => buscarPersonas(termino), 300);
-      });
-
-      // Seleccionar persona
-      resultadosDiv.addEventListener('click', (e) => {
-        const personaElement = e.target.closest('[data-id]');
-        if (personaElement) {
-          const personaId = personaElement.getAttribute('data-id');
-          const personaNombre = personaElement.getAttribute('data-nombre');
-          
-          personaIdInput.value = personaId;
-          personaBuscar.value = personaNombre;
-          
-          personaSeleccionadaDiv.innerHTML = `
-            <div class="flex justify-between items-center">
-              <div>
-                <span class="font-medium">${personaNombre}</span>
-                ${personaElement.querySelector('.text-gray-500') ? 
-                  `<div class="text-xs text-gray-500">${personaElement.querySelector('.text-gray-500').textContent}</div>` : ''}
+        searchTimeout = window.setTimeout(async () => {
+          try {
+            const response = await fetch(`/api/personas/buscar?q=${encodeURIComponent(query)}`);
+            if (!response.ok) throw new Error('Error en la búsqueda');
+            
+            const personas = await response.json();
+            
+            if (personas.length === 0) {
+              resultadosDiv.innerHTML = '<div class="p-2 text-gray-500">No se encontraron resultados</div>';
+              resultadosDiv.classList.remove('hidden');
+              return;
+            }
+            
+            resultadosDiv.innerHTML = personas.map((persona: any) => `
+              <div class="p-2 hover:bg-gray-100 cursor-pointer" data-id="${persona.id}">
+                ${persona.nombre_completo}${persona.documento_identidad ? ` (${persona.documento_identidad})` : ''}
               </div>
-              <button type="button" id="quitar_persona" class="text-gray-400 hover:text-red-500 transition-colors">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          `;
-          
-          personaSeleccionadaDiv.classList.remove('hidden');
+            `).join('');
+            
+            resultadosDiv.classList.remove('hidden');
+            
+            // Agregar manejadores de clic a los resultados
+            resultadosDiv.querySelectorAll('div[data-id]').forEach(div => {
+              div.addEventListener('click', () => {
+                const id = div.getAttribute('data-id');
+                const nombre = div.textContent?.trim().split(' (')[0] || '';
+                personaId.value = id || '';
+                personaBuscar.value = nombre;
+                resultadosDiv.classList.add('hidden');
+              });
+            });
+            
+          } catch (error) {
+            console.error('Error buscando personas:', error);
+            resultadosDiv.innerHTML = '<div class="p-2 text-red-500">Error al buscar personas</div>';
+            resultadosDiv.classList.remove('hidden');
+          }
+        }, 300);
+      });
+      
+      // Ocultar resultados al hacer clic fuera
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (target !== personaBuscar && !resultadosDiv.contains(target)) {
           resultadosDiv.classList.add('hidden');
         }
       });
 
-      // Quitar persona seleccionada
-      document.addEventListener('click', (e) => {
-        if (e.target.closest('#quitar_persona')) {
-          personaIdInput.value = '';
-          personaBuscar.value = '';
-          personaSeleccionadaDiv.classList.add('hidden');
-        }
-      });
-
-      // Cerrar resultados al hacer clic fuera
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('#persona_buscar') && !e.target.closest('#persona_resultados')) {
-          resultadosDiv.classList.add('hidden');
-        }
-      });
-
-      // Enviar formulario
-      form.addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const submitButton = form.querySelector('button[type="submit"]');
+      // Manejar envío del formulario
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+        if (!submitButton) return;
+        
         const originalButtonText = submitButton.innerHTML;
         
         try {
-          // Mostrar estado de carga
+          // Mostrar indicador de carga
           submitButton.disabled = true;
           submitButton.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
             Procesando...
           `;
-
-          // Validación de monto
-          const montoInput = form.querySelector('input[name="monto"]');
-          const monto = parseFloat(montoInput.value);
-          if (!montoInput.value || isNaN(monto) || monto <= 0) {
-            throw new Error('El monto debe ser mayor a 0');
-          }
-
+          
           const formData = new FormData(form);
-          const response = await fetch(`${window.location.origin}/api/contabilidad/transacciones`, {
+          const response = await fetch(form.action, {
             method: 'POST',
             body: formData,
+            headers: { 'Accept': 'application/json' }
           });
-
+          
+          const result = await response.json();
+          
           if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Error al registrar la transacción');
-          }
-
-          // Generar PDF
-          const doc = new jsPDF.default();
-          
-          // Estilos
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(18);
-          doc.setTextColor(31, 41, 55); // gray-800
-          doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
-          
-          // Línea decorativa
-          doc.setDrawColor(59, 130, 246); // blue-500
-          doc.setLineWidth(0.5);
-          doc.line(20, 25, 190, 25);
-          
-          // Información de la transacción
-          doc.setFontSize(10);
-          doc.setTextColor(75, 85, 99); // gray-600
-          
-          // Fecha y Número de transacción
-          doc.setFont('helvetica', 'bold');
-          doc.text('Fecha:', 20, 40);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formatDate(formData.get('fecha')), 60, 40);
-          
-          doc.setFont('helvetica', 'bold');
-          doc.text('N° Transacción:', 120, 40);
-          doc.setFont('helvetica', 'normal');
-          doc.text(`#${Date.now().toString().slice(-6)}`, 160, 40);
-          
-          // Tipo y Monto
-          doc.setFont('helvetica', 'bold');
-          doc.text('Tipo:', 20, 50);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formData.get('tipo') === 'ingreso' ? 'Ingreso' : 'Egreso', 60, 50);
-          
-          doc.setFont('helvetica', 'bold');
-          doc.text('Monto:', 120, 50);
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(22, 163, 74); // green-600
-          doc.text(formatCurrency(monto), 160, 50);
-          
-          // Categoría y Actividad
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(75, 85, 99);
-          doc.text('Categoría:', 20, 65);
-          doc.setFont('helvetica', 'normal');
-          doc.text(
-            document.querySelector(`#categoria_id option[value="${formData.get('categoria_id')}"]`)?.textContent || 'N/A', 
-            60, 
-            65
-          );
-          
-          doc.setFont('helvetica', 'bold');
-          doc.text('Actividad:', 20, 75);
-          doc.setFont('helvetica', 'normal');
-          const actividadId = formData.get('actividad_id');
-          doc.text(
-            actividadId ? 
-              document.querySelector(`#actividad_id option[value="${actividadId}"]`)?.textContent : 'N/A', 
-            60, 
-            75
-          );
-          
-          // Persona
-          doc.setFont('helvetica', 'bold');
-          doc.text('Persona:', 20, 85);
-          doc.setFont('helvetica', 'normal');
-          doc.text(formData.get('persona_buscar') || 'No especificada', 60, 85);
-          
-          // Descripción
-          const descripcion = formData.get('descripcion');
-          if (descripcion) {
-            doc.setFont('helvetica', 'bold');
-            doc.text('Descripción:', 20, 100);
-            doc.setFont('helvetica', 'normal');
-            
-            // Dividir el texto en líneas que quepan en el ancho del PDF
-            const maxWidth = 160;
-            const lineHeight = 5;
-            let y = 105;
-            
-            // Función para dividir texto en líneas
-            const splitText = (text, maxWidth) => {
-              const words = text.split(' ');
-              const lines = [];
-              let currentLine = words[0];
-              
-              for (let i = 1; i < words.length; i++) {
-                const word = words[i];
-                const width = doc.getTextWidth(currentLine + ' ' + word);
-                
-                if (width < maxWidth) {
-                  currentLine += ' ' + word;
-                } else {
-                  lines.push(currentLine);
-                  currentLine = word;
-                }
-              }
-              
-              lines.push(currentLine);
-              return lines;
-            };
-            
-            const lines = splitText(descripcion, maxWidth);
-            
-            // Mostrar las líneas (máximo 10 para no salir de la página)
-            const maxLines = Math.min(lines.length, 10);
-            for (let i = 0; i < maxLines; i++) {
-              doc.text(lines[i], 25, y);
-              y += lineHeight;
-              
-              // Si nos acercamos al final de la página, crear una nueva
-              if (y > 270 && i < lines.length - 1) {
-                doc.addPage();
-                y = 20;
-              }
-            }
+            throw new Error(result.error || 'Error al guardar la transacción');
           }
           
-          // Pie de página
-          doc.setFontSize(8);
-          doc.setTextColor(156, 163, 175); // gray-400
-          doc.text('Documento generado automáticamente', 105, 290, { align: 'center' });
+          // Mostrar mensaje de éxito
+          const successDiv = document.createElement('div');
+          successDiv.className = 'bg-green-50 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded';
+          successDiv.innerHTML = `
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm font-medium">¡Transacción guardada con éxito!</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                  <a href="/contabilidad/transacciones" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Ver todas las transacciones
+                  </a>
+                  <button type="button" id="export-pdf" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    Exportar a PDF
+                  </button>
+                  <button type="button" id="export-excel" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Exportar a Excel
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
           
-          // Guardar PDF
-          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-          doc.save(`transaccion_${timestamp}.pdf`);
-
-          // Redirigir con mensaje de éxito
-          window.location.href = '/contabilidad/transacciones?success=Transacción registrada exitosamente';
+          // Insertar el mensaje de éxito antes del formulario
+          form.parentNode?.insertBefore(successDiv, form);
+          
+          // Desplazar la vista al mensaje de éxito
+          successDiv.scrollIntoView({ behavior: 'smooth' });
+          
+          // Manejadores para los botones de exportación
+          document.getElementById('export-pdf')?.addEventListener('click', () => {
+            generatePDF(result);
+          });
+          
+          document.getElementById('export-excel')?.addEventListener('click', () => {
+            exportToExcel(result);
+          });
+          
+          // Limpiar el formulario
+          form.reset();
           
         } catch (error) {
           console.error('Error al enviar el formulario:', error);
@@ -567,36 +462,168 @@ const errorMessage = url.searchParams.get('error');
             <div class="flex">
               <div class="flex-shrink-0">
                 <svg class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 0L6 8.586 4.707 7.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
               </div>
               <div class="ml-3">
-                <p class="text-sm font-medium">${error.message || 'Error al procesar la transacción'}</p>
+                <p class="text-sm font-medium">${error instanceof Error ? error.message : 'Error al procesar la transacción'}</p>
               </div>
             </div>
           `;
           
           // Insertar el mensaje de error antes del formulario
-          form.parentNode.insertBefore(errorDiv, form);
+          form.parentNode?.insertBefore(errorDiv, form);
           
-          // Hacer scroll al mensaje de error
-          errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Desplazar la vista al mensaje de error
+          errorDiv.scrollIntoView({ behavior: 'smooth' });
           
         } finally {
           // Restaurar el botón
-          submitButton.disabled = false;
-          submitButton.innerHTML = originalButtonText;
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+          }
         }
       });
       
-      // Establecer fecha actual por defecto
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('fecha').value = today;
+      // Función para generar PDF
+      async function generatePDF(transaccion: any) {
+        try {
+          const doc = new jsPDF();
+          
+          // Configuración del documento
+          doc.setFont('helvetica');
+          doc.setFontSize(18);
+          doc.setTextColor(0, 0, 0);
+          
+          // Título
+          doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
+          
+          // Línea divisoria
+          doc.setDrawColor(0, 0, 0);
+          doc.setLineWidth(0.5);
+          doc.line(20, 25, 190, 25);
+          
+          // Información de la transacción
+          doc.setFontSize(12);
+          let y = 40;
+          
+          // Fecha y Número
+          doc.setFont(undefined, 'bold');
+          doc.text('Fecha:', 20, y);
+          doc.setFont(undefined, 'normal');
+          doc.text(new Date(transaccion.fecha).toLocaleString('es-CO'), 60, y);
+          
+          doc.setFont(undefined, 'bold');
+          doc.text('N° Transacción:', 120, y);
+          doc.setFont(undefined, 'normal');
+          doc.text(`#${transaccion.id || 'N/A'}`, 160, y);
+          y += 10;
+          
+          // Tipo y Monto
+          doc.setFont(undefined, 'bold');
+          doc.text('Tipo:', 20, y);
+          doc.setFont(undefined, 'normal');
+          doc.text(transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso', 60, y);
+          
+          doc.setFont(undefined, 'bold');
+          doc.text('Monto:', 120, y);
+          doc.setFont(undefined, 'bold');
+          doc.setTextColor(22, 163, 74); // Verde para el monto
+          doc.text(formatCurrency(transaccion.monto), 160, y);
+          doc.setTextColor(0, 0, 0); // Volver a negro
+          y += 15;
+          
+          // Categoría y Actividad
+          doc.setFont(undefined, 'bold');
+          doc.text('Categoría:', 20, y);
+          doc.setFont(undefined, 'normal');
+          doc.text(transaccion.categoria_nombre || 'N/A', 60, y);
+          y += 10;
+          
+          if (transaccion.actividad_nombre) {
+            doc.setFont(undefined, 'bold');
+            doc.text('Actividad:', 20, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(transaccion.actividad_nombre, 60, y);
+            y += 10;
+          }
+          
+          // Persona
+          if (transaccion.persona_nombre) {
+            doc.setFont(undefined, 'bold');
+            doc.text('Persona:', 20, y);
+            doc.setFont(undefined, 'normal');
+            doc.text(transaccion.persona_nombre, 60, y);
+            y += 15;
+          } else {
+            y += 5;
+          }
+          
+          // Descripción
+          if (transaccion.descripcion) {
+            doc.setFont(undefined, 'bold');
+            doc.text('Descripción:', 20, y);
+            y += 7;
+            
+            // Dividir la descripción en líneas
+            const descripcion = doc.splitTextToSize(transaccion.descripcion, 170);
+            doc.setFont(undefined, 'normal');
+            doc.text(descripcion, 20, y + 5);
+          }
+          
+          // Guardar el PDF
+          doc.save(`transaccion_${transaccion.id || 'nueva'}.pdf`);
+          
+        } catch (error) {
+          console.error('Error al generar el PDF:', error);
+          alert('Error al generar el PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+        }
+      }
+      
+      // Función para exportar a Excel
+      async function exportToExcel(transaccion: any) {
+        try {
+          // Importar dinámicamente la biblioteca XLSX
+          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.19.3/package/xlsx.mjs');
+          
+          // Crear un libro de trabajo
+          const wb = XLSX.utils.book_new();
+          
+          // Crear una hoja con los datos de la transacción
+          const wsData = [
+            ['Campo', 'Valor'],
+            ['ID', transaccion.id || 'N/A'],
+            ['Fecha', new Date(transaccion.fecha).toLocaleString('es-CO')],
+            ['Tipo', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'],
+            ['Monto', transaccion.monto],
+            ['Categoría', transaccion.categoria_nombre || 'N/A'],
+            ['Actividad', transaccion.actividad_nombre || 'N/A'],
+            ['Persona', transaccion.persona_nombre || 'N/A'],
+            ['Descripción', transaccion.descripcion || '']
+          ];
+          
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          
+          // Ajustar el ancho de las columnas
+          ws['!cols'] = [
+            { wch: 15 }, // Ancho para la columna de campos
+            { wch: 40 }  // Ancho para la columna de valores
+          ];
+          
+          // Añadir la hoja al libro
+          XLSX.utils.book_append_sheet(wb, ws, 'Transacción');
+          
+          // Generar el archivo Excel
+          XLSX.writeFile(wb, `transaccion_${transaccion.id || 'nueva'}.xlsx`);
+          
+        } catch (error) {
+          console.error('Error al exportar a Excel:', error);
+          alert('Error al exportar a Excel: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+        }
+      }
       
       // Filtrar categorías según el tipo de transacción
-      const tipoSelect = document.getElementById('tipo');
-      const categoriaSelect = document.getElementById('categoria_id');
-      
       function filtrarCategorias() {
         const tipo = tipoSelect.value;
         const categorias = Array.from(categoriaSelect.options);
@@ -605,26 +632,23 @@ const errorMessage = url.searchParams.get('error');
         categorias.forEach(option => {
           if (option.value === '') return; // No ocultar la opción por defecto
           
-          const optionTipo = option.textContent.includes('(ingreso)') ? 'ingreso' : 
-                            option.textContent.includes('(egreso)') ? 'egreso' : '';
-          
-          if (optionTipo && optionTipo !== tipo) {
-            option.style.display = 'none';
-            if (option.selected) option.selected = false;
-          } else {
+          const categoriaTipo = option.getAttribute('data-tipo');
+          if (categoriaTipo === tipo || categoriaTipo === 'ambos') {
             option.style.display = '';
+          } else {
+            option.style.display = 'none';
+            // Si la opción seleccionada se oculta, seleccionar la opción por defecto
+            if (option.selected) {
+              categoriaSelect.value = '';
+            }
           }
         });
-        
-        // Seleccionar la primera opción disponible si la actual no es válida
-        if (categoriaSelect.selectedIndex === -1 || !categoriaSelect.options[categoriaSelect.selectedIndex].value) {
-          const firstVisible = Array.from(categoriaSelect.options).find(opt => opt.value && opt.style.display !== 'none');
-          if (firstVisible) firstVisible.selected = true;
-        }
       }
       
-      // Filtrar categorías al cargar la página y cuando cambie el tipo
+      // Inicializar filtrado de categorías
       filtrarCategorias();
+      
+      // Escuchar cambios en el tipo de transacción
       tipoSelect.addEventListener('change', filtrarCategorias);
     });
   </script>
@@ -670,4 +694,4 @@ const errorMessage = url.searchParams.get('error');
       transition: all 150ms ease-in-out;
     }
   </style>
-</Layout>
+</LayoutProtected>

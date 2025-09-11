@@ -1,0 +1,337 @@
+---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
+
+const id = Astro.params.id as string;
+const baseUrl = Astro.url.origin;
+let transaccion: any = null;
+let error: string | null = null;
+
+try {
+  const res = await fetch(`${baseUrl}/api/contabilidad/transacciones/${id}`);
+  if (!res.ok) {
+    error = 'No se pudo cargar la transacción';
+  } else {
+    transaccion = await res.json();
+  }
+} catch (e) {
+  error = 'Error al cargar la transacción';
+}
+
+// Serializar datos de forma segura para incrustar como JSON sin escape
+const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, '\\u003c') : 'null';
+---
+<LayoutProtected title={`Transacción #${id}`}>
+  <div class="min-h-screen bg-gradient-to-br from-gray-50 via-white to-green-50">
+    <div class="max-w-6xl mx-auto p-6">
+      <!-- Header con navegación -->
+      <div class="mb-8">
+        <a href="/contabilidad/transacciones" class="group inline-flex items-center px-4 py-2 text-gray-600 hover:text-green-600 transition-all duration-300 hover:bg-white hover:shadow-md rounded-lg">
+          <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          <span class="font-medium">Volver al listado</span>
+        </a>
+      </div>
+
+      {error ? (
+        <div class="bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 p-6 mb-8 rounded-r-lg shadow-lg">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                <svg class="h-6 w-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-semibold text-red-800">Error al cargar</h3>
+              <p class="text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="space-y-8">
+          <!-- Header de la transacción -->
+          <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+              <div class="flex items-center justify-between">
+                <div class="text-white">
+                  <h1 class="text-3xl font-bold mb-2">
+                    Transacción #{transaccion.id}
+                  </h1>
+                  <p class="text-green-100 text-lg">
+                    Información detallada de la transacción
+                  </p>
+                </div>
+                <div class="text-right text-white">
+                  <div class="text-sm text-green-100 mb-1">Monto</div>
+                  <div class={`text-3xl font-bold ${transaccion.tipo === 'ingreso' ? 'text-green-200' : 'text-red-200'}`}>
+                    {transaccion.tipo === 'ingreso' ? '+' : '-'} {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(transaccion.monto)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="bg-gray-50 px-8 py-4 border-b border-gray-200">
+              <div class="flex space-x-4">
+                <button id="exportar-pdf" class="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
+                  <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  Exportar PDF
+                </button>
+                <button id="exportar-excel" class="group inline-flex items-center px-6 py-3 bg-white border-2 border-green-500 text-green-600 font-medium rounded-lg shadow-lg hover:bg-green-50 hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300">
+                  <svg class="w-5 h-5 mr-2 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Exportar Excel
+                </button>
+              </div>
+            </div>
+
+            <!-- Información de la transacción - Versión compacta -->
+            <div class="p-8">
+              <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                  <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                  Información de la Transacción
+                </h3>
+                
+                <!-- Grid compacto de información -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+                  <!-- Fecha y Hora -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Fecha y Hora</div>
+                    <div class="text-sm font-semibold text-gray-900">{new Date(transaccion.fecha).toLocaleString('es-CO')}</div>
+                  </div>
+
+                  <!-- Tipo -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Tipo</div>
+                    <div class={`text-sm font-semibold ${transaccion.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaccion.tipo === 'ingreso' ? '📈 Ingreso' : '📉 Egreso'}
+                    </div>
+                  </div>
+
+                  <!-- Monto -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Monto</div>
+                    <div class={`text-sm font-bold ${transaccion.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
+                      {transaccion.tipo === 'ingreso' ? '+' : '-'} {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP' }).format(transaccion.monto)}
+                    </div>
+                  </div>
+
+                  <!-- Categoría -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Categoría</div>
+                    <div class="text-sm font-semibold text-gray-900">{transaccion.categoria_nombre || 'No especificada'}</div>
+                  </div>
+
+                  <!-- Actividad -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Actividad</div>
+                    <div class="text-sm font-semibold text-gray-900">{transaccion.actividad_nombre || 'No especificada'}</div>
+                  </div>
+
+                  <!-- Persona -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">Persona</div>
+                    <div class="text-sm font-semibold text-gray-900">{transaccion.persona_nombre || 'No especificada'}</div>
+                  </div>
+
+                  <!-- ID -->
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-1">ID Transacción</div>
+                    <div class="text-sm font-bold text-green-600">#{transaccion.id}</div>
+                  </div>
+
+                  <!-- Estado/Resumen -->
+                  <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-lg p-4 text-white shadow-sm">
+                    <div class="text-xs font-medium text-green-200 mb-1">Estado</div>
+                    <div class="text-sm font-bold">Registrada</div>
+                  </div>
+                </div>
+
+                <!-- Descripción (si existe) -->
+                {transaccion.descripcion && (
+                  <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
+                    <div class="text-xs font-medium text-gray-500 mb-2">Descripción</div>
+                    <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{transaccion.descripcion}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script type="application/json" id="transaccion-data" set:html={transaccionJson}></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Obtener datos de la transacción de forma segura
+      const transaccionEl = document.getElementById('transaccion-data');
+      const transaccion = JSON.parse(transaccionEl?.textContent || 'null');
+      
+      if (!transaccion) {
+        console.error('No se pudo cargar los datos de la transacción');
+        return;
+      }
+      // Exportar a PDF
+      document.getElementById('exportar-pdf')?.addEventListener('click', async () => {
+        try {
+          // Cargar jsPDF desde CDN con fallback
+          let jsPDF;
+          try {
+            // @ts-ignore - Importación dinámica desde CDN
+            const jsPDFModule = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+            jsPDF = jsPDFModule.jsPDF;
+          } catch (e) {
+            console.error('Error cargando jsPDF desde CDN:', e);
+            alert('Error al cargar la librería PDF. Verifica tu conexión a internet.');
+            return;
+          }
+          
+          const doc = new jsPDF();
+          
+          // Configuración del documento
+          doc.setFont('helvetica');
+          doc.setFontSize(20);
+          doc.setTextColor(30, 64, 175); // Azul oscuro
+          
+          // Título
+          doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
+          
+          // Línea decorativa
+          doc.setDrawColor(30, 64, 175);
+          doc.setLineWidth(0.5);
+          doc.line(20, 25, 190, 25);
+          
+          // Información de la transacción
+          let y = 40;
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0); // Negro
+          
+          // Función para agregar filas de información
+          const addRow = (label: string, value: string, isBold = false, isTitle = false) => {
+            if (isTitle) {
+              doc.setFontSize(14);
+              doc.setFont(undefined, 'bold');
+              doc.text(label, 20, y);
+              doc.text(value, 60, y);
+              doc.setFontSize(12);
+              doc.setFont(undefined, 'normal');
+              y += 10;
+            } else {
+              doc.text(label, 20, y);
+              if (isBold) doc.setFont(undefined, 'bold');
+              doc.text(value, 60, y);
+              if (isBold) doc.setFont(undefined, 'normal');
+              y += 7;
+            }
+          };
+          
+          // Datos de la transacción
+          addRow('ID de Transacción:', `#${transaccion.id}`, true);
+          addRow('Fecha y Hora:', new Date(transaccion.fecha).toLocaleString('es-CO'));
+          addRow('Tipo:', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso');
+          addRow('Monto:', new Intl.NumberFormat('es-CO', { 
+            style: 'currency', 
+            currency: 'COP' 
+          }).format(transaccion.monto), true);
+          
+          addRow('Categoría:', transaccion.categoria_nombre || 'No especificada');
+          if (transaccion.actividad_nombre) addRow('Actividad:', transaccion.actividad_nombre);
+          if (transaccion.persona_nombre) addRow('Persona:', transaccion.persona_nombre);
+          
+          if (transaccion.descripcion) {
+            y += 5;
+            addRow('Descripción:', '', false, true);
+            const splitDesc = doc.splitTextToSize(transaccion.descripcion, 170);
+            doc.text(splitDesc, 20, y + 5);
+          }
+          
+          // Pie de página
+          const pageCount = doc.internal.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(
+              `Página ${i} de ${pageCount}`,
+              doc.internal.pageSize.width - 20,
+              doc.internal.pageSize.height - 10,
+              { align: 'right' }
+            );
+            doc.text(
+              new Date().toLocaleString('es-CO'),
+              20,
+              doc.internal.pageSize.height - 10
+            );
+          }
+          
+          // Guardar el documento
+          doc.save(`transaccion_${transaccion.id}.pdf`);
+          
+        } catch (error) {
+          console.error('Error al generar el PDF:', error);
+          alert('Error al generar el PDF. Por favor, inténtalo de nuevo.');
+        }
+      });
+
+      // Exportar a Excel
+      document.getElementById('exportar-excel')?.addEventListener('click', async () => {
+        try {
+          let XLSX;
+          try {
+            XLSX = await import('xlsx'); 
+          } catch (e) {
+            try {
+              // @ts-ignore - Importación dinámica desde CDN
+              XLSX = await import('https://cdn.sheetjs.com/xlsx-0.19.3/package/xlsx.mjs');
+            } catch (e2) {
+              console.error('Error cargando XLSX desde CDN:', e2);
+              alert('Error al cargar la librería Excel. Verifica tu conexión a internet.');
+              return;
+            }
+          }
+          
+          const wsData = [
+            ['Campo', 'Valor'],
+            ['ID', transaccion.id],
+            ['Fecha', new Date(transaccion.fecha).toLocaleString('es-CO')],
+            ['Tipo', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'],
+            ['Monto', {
+              t: 'n',
+              v: transaccion.monto,
+              z: '"$"#,##0.00_);[Red]\\-\\("$"#,##0.00\\)' // Formato de moneda
+            }],
+            ['Categoría', transaccion.categoria_nombre || 'N/A'],
+            ['Actividad', transaccion.actividad_nombre || 'N/A'],
+            ['Persona', transaccion.persona_nombre || 'N/A'],
+            ['Descripción', transaccion.descripcion || '']
+          ];
+          
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.aoa_to_sheet(wsData);
+          
+          // Ajustar el ancho de las columnas
+          const wscols = [
+            { wch: 15 }, // Ancho de la columna de campo
+            { wch: 30 }  // Ancho de la columna de valor
+          ];
+          ws['!cols'] = wscols;
+          
+          XLSX.utils.book_append_sheet(wb, ws, 'Transacción');
+          XLSX.writeFile(wb, `transaccion_${transaccion.id}.xlsx`);
+          
+        } catch (error) {
+          console.error('Error al exportar a Excel:', error);
+          alert('Error al exportar a Excel. Por favor, inténtalo de nuevo.');
+        }
+      });
+    });
+  </script>
+</LayoutProtected>
