@@ -34,4 +34,40 @@ export const GET: APIRoute = async ({ params }) => {
   }
 };
 
+// Anular transacción
+export const PUT: APIRoute = async ({ params, request, redirect }) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
+    }
 
+    const id = params?.id;
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'ID de transacción requerido' }), { status: 400 });
+    }
+
+    const formData = await request.formData();
+    const notas_anulacion = formData.get('notas_anulacion') as string;
+
+    if (!notas_anulacion) {
+      return new Response(JSON.stringify({ error: 'Se requiere una nota de anulación' }), { status: 400 });
+    }
+
+    const { error } = await supabase
+      .from('transacciones')
+      .update({ estado: 'anulada', notas_anulacion })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error al anular transacción:', error);
+      return new Response(JSON.stringify({ error: 'Error al anular la transacción' }), { status: 500 });
+    }
+
+    return redirect('/contabilidad/transacciones?success=Transacción anulada exitosamente', 302);
+  } catch (error: unknown) {
+    console.error('Error inesperado:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error interno desconocido';
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
+  }
+};

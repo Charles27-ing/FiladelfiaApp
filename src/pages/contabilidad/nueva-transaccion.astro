@@ -64,14 +64,24 @@ const errorMessage = url.searchParams.get('error');
 ---
 
 <LayoutProtected title="Registrar Nueva Transacción">
+   <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-green-700 px-8 py-6">
+          <h2 class="text-2xl font-bold text-white flex items-center">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Registrar Nuevo Movimiento
+          </h2>
+          
+        </div>
   <div class="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-md">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold text-gray-800">Registrar Nueva Transacción</h1>
-      <a href="/contabilidad/transacciones" class="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+      <p class="text-gray-600 font-semibold mt-1">Complete todos los campos requeridos para registrar la transacción</p>
+      <a href="/contabilidad/transacciones" class="group inline-flex items-center px-4 py-2 text-gray-600 hover:text-green-600 transition-all duration-300 hover:bg-white hover:shadow-md rounded-lg">
+        <svg class="w-5 h-5 mr-2 transform group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
         </svg>
-        Volver a transacciones
+        <span class="font-medium">Volver al listado</span>
       </a>
     </div>
 
@@ -110,58 +120,95 @@ const errorMessage = url.searchParams.get('error');
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Columna Izquierda -->
         <div class="space-y-6">
+
+          <!-- Fecha y Tipo -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="fecha" class="block text-sm font-medium text-gray-700 mb-2">
+                <span class="flex items-center">
+                  <svg class="w-3 h-2 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Fecha *
+                </span>
+              </label>
+              <input 
+                type="date" 
+                id="fecha" 
+                name="fecha" 
+                required 
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ease-in-out bg-white shadow-sm"
+              />
+            </div>
+            <div>
+              <label for="tipo" class="block text-sm font-medium text-gray-700 mb-2">
+                <span class="flex items-center">
+                  <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                  </svg>
+                  Tipo *
+                </span>
+              </label>
+              <div class="relative">
+                <select 
+                  id="tipo" 
+                  name="tipo" 
+                  required 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ease-in-out bg-white shadow-sm appearance-none"
+                >
+                  <option value="ingreso">📈 Ingreso</option>
+                  <option value="egreso">📉 Egreso</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                  <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
           <!-- Búsqueda de persona -->
           <div class="relative">
-            <label for="persona_buscar" class="block text-sm font-medium text-gray-700 mb-1">Buscar Persona</label>
+            <label for="persona_buscar" class="block text-sm font-medium text-gray-700 mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Buscar Persona
+              </span>
+            </label>
             <div class="relative">
               <input 
                 type="text" 
                 id="persona_buscar" 
                 name="persona_buscar" 
                 placeholder="Nombre o documento..." 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 ease-in-out bg-white shadow-sm"
                 autocomplete="off"
               />
               <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                <svg class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
             </div>
             <input type="hidden" id="persona_id" name="persona_id" value="" />
-            <div id="persona_resultados" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto text-sm"></div>
-            <div id="persona_seleccionada" class="mt-2 p-2 bg-gray-50 rounded-md border border-gray-200 text-sm hidden"></div>
+            <div id="persona_resultados" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
+            <div id="persona_seleccionada" class="mt-2 p-3 bg-green-50 rounded-lg border border-green-200 hidden"></div>
           </div>
 
-          <!-- Fecha y Tipo -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="fecha" class="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-              <input 
-                type="date" 
-                id="fecha" 
-                name="fecha" 
-                required 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
-            </div>
-            <div>
-              <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-              <select 
-                id="tipo" 
-                name="tipo" 
-                required 
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
-              >
-                <option value="ingreso">Ingreso</option>
-                <option value="egreso">Egreso</option>
-              </select>
-            </div>
-          </div>
+          
 
           <!-- Monto -->
           <div>
-            <label for="monto" class="block text-sm font-medium text-gray-700 mb-1">Monto</label>
+            <label for="monto" class="block text-sm font-medium text-gray-700 mb-2">
+                  <span class="flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                    </svg>
+                    Monto *
+                  </span>
+                </label>
             <div class="relative rounded-md shadow-sm">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <span class="text-gray-500 sm:text-sm">$</span>
@@ -186,8 +233,15 @@ const errorMessage = url.searchParams.get('error');
         <!-- Columna Derecha -->
         <div class="space-y-4">
           <!-- Categoría -->
+           
           <div>
-            <label for="categoria_id" class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+            <label for="categoria_id" class="block text-sm font-medium text-gray-700 mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                Categoría *
+              </span>
             <select 
               id="categoria_id" 
               name="categoria_id" 
@@ -205,7 +259,14 @@ const errorMessage = url.searchParams.get('error');
 
           <!-- Actividad -->
           <div>
-            <label for="actividad_id" class="block text-sm font-medium text-gray-700 mb-1">Actividad (opcional)</label>
+            <label for="actividad_id" class="block text-sm font-medium text-gray-700 mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Actividad (opcional)
+              </span>
+            </label>
             <select 
               id="actividad_id" 
               name="actividad_id" 
@@ -220,7 +281,14 @@ const errorMessage = url.searchParams.get('error');
 
           <!-- Descripción -->
           <div>
-            <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                </svg>
+                Descripción
+              </span>
+            </label>
             <textarea 
               id="descripcion" 
               name="descripcion" 
@@ -232,7 +300,15 @@ const errorMessage = url.searchParams.get('error');
 
           <!-- Evidencia -->
           <div>
-            <label for="evidencia" class="block text-sm font-medium text-gray-700 mb-1">URL de evidencia (opcional)</label>
+            <label for="evidencia" class="block text-sm font-medium text-gray-700 mb-2">
+              <span class="flex items-center">
+                <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                URL de evidencia (opcional)
+              </span>
+            </label>
             <div class="mt-1 flex rounded-md shadow-sm">
               <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
                 https://
@@ -265,11 +341,13 @@ const errorMessage = url.searchParams.get('error');
   </div>
 
   <script>
+    import jsPDF from 'jspdf';
+    import 'jspdf-autotable';
+    import * as XLSX from 'xlsx';
+    
     document.addEventListener('DOMContentLoaded', async () => {
-      // Cargar jsPDF dinámicamente
-     // const { jsPDF } = await import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
       
-      const form = document.getElementById('transaccion-form');
+      const form = document.getElementById('transaccion-form') as HTMLFormElement;
       const tipoSelect = document.getElementById('tipo') as HTMLSelectElement;
       const categoriaSelect = document.getElementById('categoria_id') as HTMLSelectElement;
       const actividadSelect = document.getElementById('actividad_id') as HTMLSelectElement;
@@ -450,7 +528,7 @@ const errorMessage = url.searchParams.get('error');
           });
           
           // Limpiar el formulario
-          form.reset();
+          (form as HTMLFormElement).reset();
           
         } catch (error) {
           console.error('Error al enviar el formulario:', error);
@@ -486,137 +564,124 @@ const errorMessage = url.searchParams.get('error');
         }
       });
       
-      // Función para generar PDF
+      // Función para generar PDF usando el módulo reutilizable
       async function generatePDF(transaccion: any) {
         try {
+          // Generar PDF directamente
           const doc = new jsPDF();
           
           // Configuración del documento
           doc.setFont('helvetica');
-          doc.setFontSize(18);
-          doc.setTextColor(0, 0, 0);
+          doc.setFontSize(20);
+          doc.setTextColor(30, 64, 175);
           
           // Título
           doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
           
-          // Línea divisoria
-          doc.setDrawColor(0, 0, 0);
+          // Línea decorativa
+          doc.setDrawColor(30, 64, 175);
           doc.setLineWidth(0.5);
           doc.line(20, 25, 190, 25);
           
           // Información de la transacción
-          doc.setFontSize(12);
           let y = 40;
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
           
-          // Fecha y Número
-          doc.setFont(undefined, 'bold');
-          doc.text('Fecha:', 20, y);
-          doc.setFont(undefined, 'normal');
-          doc.text(new Date(transaccion.fecha).toLocaleString('es-CO'), 60, y);
-          
-          doc.setFont(undefined, 'bold');
-          doc.text('N° Transacción:', 120, y);
-          doc.setFont(undefined, 'normal');
-          doc.text(`#${transaccion.id || 'N/A'}`, 160, y);
-          y += 10;
-          
-          // Tipo y Monto
-          doc.setFont(undefined, 'bold');
-          doc.text('Tipo:', 20, y);
-          doc.setFont(undefined, 'normal');
-          doc.text(transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso', 60, y);
-          
-          doc.setFont(undefined, 'bold');
-          doc.text('Monto:', 120, y);
-          doc.setFont(undefined, 'bold');
-          doc.setTextColor(22, 163, 74); // Verde para el monto
-          doc.text(formatCurrency(transaccion.monto), 160, y);
-          doc.setTextColor(0, 0, 0); // Volver a negro
-          y += 15;
-          
-          // Categoría y Actividad
-          doc.setFont(undefined, 'bold');
-          doc.text('Categoría:', 20, y);
-          doc.setFont(undefined, 'normal');
-          doc.text(transaccion.categoria_nombre || 'N/A', 60, y);
-          y += 10;
-          
-          if (transaccion.actividad_nombre) {
+          // Función para agregar filas
+          const addRow = (label: any, value: any, isBold = false) => {
             doc.setFont(undefined, 'bold');
-            doc.text('Actividad:', 20, y);
-            doc.setFont(undefined, 'normal');
-            doc.text(transaccion.actividad_nombre, 60, y);
-            y += 10;
-          }
+            // @ts-ignore - jsPDF text method accepts any type
+            doc.text(label || '', 20, y);
+            doc.setFont(undefined, isBold ? 'bold' : 'normal');
+            // @ts-ignore - jsPDF text method accepts any type
+            doc.text(value || '', 80, y);
+            y += 7;
+          };
           
-          // Persona
-          if (transaccion.persona_nombre) {
-            doc.setFont(undefined, 'bold');
-            doc.text('Persona:', 20, y);
-            doc.setFont(undefined, 'normal');
-            doc.text(transaccion.persona_nombre, 60, y);
-            y += 15;
-          } else {
-            y += 5;
-          }
+          // Datos de la transacción
+          addRow('Número de Transacción:', `#${transaccion.numero_transaccion || transaccion.id}`, true);
+          addRow('Fecha y Hora:', new Date(transaccion.fecha).toLocaleString('es-CO'));
+          addRow('Tipo:', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso');
+          addRow('Monto:', new Intl.NumberFormat('es-CO', { 
+            style: 'currency', 
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          }).format(transaccion.monto), true);
+          addRow('Categoría:', transaccion.categoria_nombre || 'N/A');
+          if (transaccion.actividad_nombre) addRow('Actividad:', transaccion.actividad_nombre);
+          if (transaccion.persona_nombre) addRow('Persona:', transaccion.persona_nombre);
+          addRow('Estado:', transaccion.estado === 'anulada' ? 'Anulada' : 'Activa');
           
-          // Descripción
           if (transaccion.descripcion) {
+            y += 5;
             doc.setFont(undefined, 'bold');
             doc.text('Descripción:', 20, y);
             y += 7;
-            
-            // Dividir la descripción en líneas
-            const descripcion = doc.splitTextToSize(transaccion.descripcion, 170);
             doc.setFont(undefined, 'normal');
-            doc.text(descripcion, 20, y + 5);
+            const splitDesc = doc.splitTextToSize(transaccion.descripcion, 170);
+            doc.text(splitDesc, 20, y);
           }
           
-          // Guardar el PDF
-          doc.save(`transaccion_${transaccion.id || 'nueva'}.pdf`);
+          // Pie de página
+          const pageCount = (doc as any).internal.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(
+              `Página ${i} de ${pageCount}`,
+              (doc as any).internal.pageSize.width - 20,
+              (doc as any).internal.pageSize.height - 10,
+              { align: 'right' }
+            );
+            doc.text(
+              new Date().toLocaleString('es-CO'),
+              20,
+              (doc as any).internal.pageSize.height - 10
+            );
+          }
           
+          // Guardar el documento
+          const filename = `transaccion_${transaccion.numero_transaccion || transaccion.id}.pdf`;
+          doc.save(filename);
         } catch (error) {
           console.error('Error al generar el PDF:', error);
           alert('Error al generar el PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
         }
       }
       
-      // Función para exportar a Excel
+      // Función para exportar a Excel usando el módulo reutilizable
       async function exportToExcel(transaccion: any) {
         try {
-          // Importar dinámicamente la biblioteca XLSX
-          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.19.3/package/xlsx.mjs');
-          
-          // Crear un libro de trabajo
-          const wb = XLSX.utils.book_new();
-          
-          // Crear una hoja con los datos de la transacción
+          // Generar Excel directamente
           const wsData = [
             ['Campo', 'Valor'],
-            ['ID', transaccion.id || 'N/A'],
+            ['Número de Transacción', transaccion.numero_transaccion || transaccion.id],
             ['Fecha', new Date(transaccion.fecha).toLocaleString('es-CO')],
             ['Tipo', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'],
             ['Monto', transaccion.monto],
             ['Categoría', transaccion.categoria_nombre || 'N/A'],
             ['Actividad', transaccion.actividad_nombre || 'N/A'],
             ['Persona', transaccion.persona_nombre || 'N/A'],
+            ['Estado', transaccion.estado === 'anulada' ? 'Anulada' : 'Activa'],
             ['Descripción', transaccion.descripcion || '']
           ];
           
+          const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.aoa_to_sheet(wsData);
           
-          // Ajustar el ancho de las columnas
+          // Ajustar ancho de columnas
           ws['!cols'] = [
-            { wch: 15 }, // Ancho para la columna de campos
-            { wch: 40 }  // Ancho para la columna de valores
+            { wch: 20 },
+            { wch: 30 }
           ];
           
-          // Añadir la hoja al libro
           XLSX.utils.book_append_sheet(wb, ws, 'Transacción');
           
-          // Generar el archivo Excel
-          XLSX.writeFile(wb, `transaccion_${transaccion.id || 'nueva'}.xlsx`);
-          
+          const filename = `transaccion_${transaccion.numero_transaccion || transaccion.id}.xlsx`;
+          XLSX.writeFile(wb, filename);
         } catch (error) {
           console.error('Error al exportar a Excel:', error);
           alert('Error al exportar a Excel: ' + (error instanceof Error ? error.message : 'Error desconocido'));

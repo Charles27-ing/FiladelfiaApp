@@ -17,7 +17,8 @@ export const GET: APIRoute = async ({ url }) => {
         categorias (nombre, tipo),
         actividades (nombre),
         persona (nombres, primer_apellido, segundo_apellido)
-      `);
+      `)
+      .order('created_at', { ascending: false });
     const actividadId = new URL(url).searchParams.get('actividad_id');
     if (actividadId) {
       query = query.eq('actividad_id', actividadId);
@@ -79,6 +80,26 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       return redirect('/contabilidad?error=' + encodeURIComponent('Datos inválidos: revise fecha, monto, tipo y categoría'));
     }
 
+    const tipo_prefix = tipo === 'ingreso' ? 'ING' : 'EGR';
+    const { data: lastNum } = await supabase
+      .from('transacciones')
+      .select('numero_transaccion')
+      .eq('tipo', tipo)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    let numero_transaccion = `${tipo_prefix}001`;
+    if (lastNum && lastNum.length > 0 && lastNum[0].numero_transaccion) {
+      try {
+        const lastNumber = parseInt(lastNum[0].numero_transaccion.replace(tipo_prefix, ''), 10);
+        if (!isNaN(lastNumber)) {
+          numero_transaccion = `${tipo_prefix}${String(lastNumber + 1).padStart(3, '0')}`;
+        }
+      } catch (error) {
+        console.warn('Error al procesar número de transacción anterior:', error);
+        // Mantener el número por defecto si hay error
+      }
+    }
     const { data, error: insertError } = await supabase
       .from('transacciones')
       .insert([{ 
@@ -90,7 +111,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         actividad_id, 
         user_id: user.id, 
         evidencia,
-        persona_id
+        persona_id,
+        numero_transaccion,
+        estado: 'activa', // Para el manejo de anulaciones
       }])
       .select()
       .single();

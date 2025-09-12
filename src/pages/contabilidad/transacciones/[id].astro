@@ -57,7 +57,7 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
               <div class="flex items-center justify-between">
                 <div class="text-white">
                   <h1 class="text-3xl font-bold mb-2">
-                    Transacción #{transaccion.id}
+                    Transacción #{transaccion.numero_transaccion || transaccion.id}
                   </h1>
                   <p class="text-green-100 text-lg">
                     Información detallada de la transacción
@@ -140,16 +140,16 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
                     <div class="text-sm font-semibold text-gray-900">{transaccion.persona_nombre || 'No especificada'}</div>
                   </div>
 
-                  <!-- ID -->
+                  <!-- Número de Transacción -->
                   <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
-                    <div class="text-xs font-medium text-gray-500 mb-1">ID Transacción</div>
-                    <div class="text-sm font-bold text-green-600">#{transaccion.id}</div>
+                    <div class="text-xs font-medium text-gray-500 mb-1">Número de Transacción</div>
+                    <div class="text-sm font-bold text-green-600">#{transaccion.numero_transaccion || transaccion.id}</div>
                   </div>
 
                   <!-- Estado/Resumen -->
-                  <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-lg p-4 text-white shadow-sm">
-                    <div class="text-xs font-medium text-green-200 mb-1">Estado</div>
-                    <div class="text-sm font-bold">Registrada</div>
+                  <div class={`rounded-lg p-4 text-white shadow-sm ${transaccion.estado === 'anulada' ? 'bg-gradient-to-r from-red-600 to-red-700' : 'bg-gradient-to-r from-green-600 to-green-700'}`}>
+                    <div class={`text-xs font-medium mb-1 ${transaccion.estado === 'anulada' ? 'text-red-200' : 'text-green-200'}`}>Estado</div>
+                    <div class="text-sm font-bold">{transaccion.estado === 'anulada' ? 'Anulada' : 'Activa'}</div>
                   </div>
                 </div>
 
@@ -158,6 +158,19 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
                   <div class="bg-white rounded-lg p-4 border border-green-100 shadow-sm">
                     <div class="text-xs font-medium text-gray-500 mb-2">Descripción</div>
                     <div class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{transaccion.descripcion}</div>
+                  </div>
+                )}
+
+                <!-- Información de anulación (si está anulada) -->
+                {transaccion.estado === 'anulada' && transaccion.notas_anulacion && (
+                  <div class="bg-red-50 rounded-lg p-4 border border-red-200 shadow-sm">
+                    <div class="text-xs font-medium text-red-600 mb-2 flex items-center">
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                      </svg>
+                      Motivo de Anulación
+                    </div>
+                    <div class="text-sm text-red-700 leading-relaxed whitespace-pre-line">{transaccion.notas_anulacion}</div>
                   </div>
                 )}
               </div>
@@ -170,6 +183,10 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
 
   <script type="application/json" id="transaccion-data" set:html={transaccionJson}></script>
   <script>
+    import jsPDF from 'jspdf';
+    import 'jspdf-autotable';
+    import * as XLSX from 'xlsx';
+    
     document.addEventListener('DOMContentLoaded', async () => {
       // Obtener datos de la transacción de forma segura
       const transaccionEl = document.getElementById('transaccion-data');
@@ -179,27 +196,16 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
         console.error('No se pudo cargar los datos de la transacción');
         return;
       }
+      
       // Exportar a PDF
-      document.getElementById('exportar-pdf')?.addEventListener('click', async () => {
+      document.getElementById('exportar-pdf')?.addEventListener('click', () => {
         try {
-          // Cargar jsPDF desde CDN con fallback
-          let jsPDF;
-          try {
-            // @ts-ignore - Importación dinámica desde CDN
-            const jsPDFModule = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
-            jsPDF = jsPDFModule.jsPDF;
-          } catch (e) {
-            console.error('Error cargando jsPDF desde CDN:', e);
-            alert('Error al cargar la librería PDF. Verifica tu conexión a internet.');
-            return;
-          }
-          
           const doc = new jsPDF();
           
           // Configuración del documento
           doc.setFont('helvetica');
           doc.setFontSize(20);
-          doc.setTextColor(30, 64, 175); // Azul oscuro
+          doc.setTextColor(30, 64, 175);
           
           // Título
           doc.text('COMPROBANTE DE TRANSACCIÓN', 105, 20, { align: 'center' });
@@ -212,45 +218,40 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
           // Información de la transacción
           let y = 40;
           doc.setFontSize(12);
-          doc.setTextColor(0, 0, 0); // Negro
+          doc.setTextColor(0, 0, 0);
           
-          // Función para agregar filas de información
-          const addRow = (label: string, value: string, isBold = false, isTitle = false) => {
-            if (isTitle) {
-              doc.setFontSize(14);
-              doc.setFont(undefined, 'bold');
-              doc.text(label, 20, y);
-              doc.text(value, 60, y);
-              doc.setFontSize(12);
-              doc.setFont(undefined, 'normal');
-              y += 10;
-            } else {
-              doc.text(label, 20, y);
-              if (isBold) doc.setFont(undefined, 'bold');
-              doc.text(value, 60, y);
-              if (isBold) doc.setFont(undefined, 'normal');
-              y += 7;
-            }
+          // Función para agregar filas
+          const addRow = (label, value, isBold = false) => {
+            doc.setFont(undefined, 'bold');
+            doc.text(label, 20, y);
+            doc.setFont(undefined, isBold ? 'bold' : 'normal');
+            doc.text(value, 80, y);
+            y += 7;
           };
           
           // Datos de la transacción
-          addRow('ID de Transacción:', `#${transaccion.id}`, true);
+          addRow('Número de Transacción:', `#${transaccion.numero_transaccion || transaccion.id}`, true);
           addRow('Fecha y Hora:', new Date(transaccion.fecha).toLocaleString('es-CO'));
           addRow('Tipo:', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso');
           addRow('Monto:', new Intl.NumberFormat('es-CO', { 
             style: 'currency', 
-            currency: 'COP' 
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
           }).format(transaccion.monto), true);
-          
-          addRow('Categoría:', transaccion.categoria_nombre || 'No especificada');
+          addRow('Categoría:', transaccion.categoria_nombre || 'N/A');
           if (transaccion.actividad_nombre) addRow('Actividad:', transaccion.actividad_nombre);
           if (transaccion.persona_nombre) addRow('Persona:', transaccion.persona_nombre);
+          addRow('Estado:', transaccion.estado === 'anulada' ? 'Anulada' : 'Activa');
           
           if (transaccion.descripcion) {
             y += 5;
-            addRow('Descripción:', '', false, true);
+            doc.setFont(undefined, 'bold');
+            doc.text('Descripción:', 20, y);
+            y += 7;
+            doc.setFont(undefined, 'normal');
             const splitDesc = doc.splitTextToSize(transaccion.descripcion, 170);
-            doc.text(splitDesc, 20, y + 5);
+            doc.text(splitDesc, 20, y);
           }
           
           // Pie de página
@@ -273,63 +274,48 @@ const transaccionJson = transaccion ? JSON.stringify(transaccion).replace(/</g, 
           }
           
           // Guardar el documento
-          doc.save(`transaccion_${transaccion.id}.pdf`);
+          const filename = `transaccion_${transaccion.numero_transaccion || transaccion.id}.pdf`;
+          doc.save(filename);
           
         } catch (error) {
-          console.error('Error al generar el PDF:', error);
-          alert('Error al generar el PDF. Por favor, inténtalo de nuevo.');
+          console.error('Error al generar PDF:', error);
+          alert('Error al generar el PDF: ' + (error instanceof Error ? error.message : 'Error desconocido'));
         }
       });
 
       // Exportar a Excel
-      document.getElementById('exportar-excel')?.addEventListener('click', async () => {
+      document.getElementById('exportar-excel')?.addEventListener('click', () => {
         try {
-          let XLSX;
-          try {
-            XLSX = await import('xlsx'); 
-          } catch (e) {
-            try {
-              // @ts-ignore - Importación dinámica desde CDN
-              XLSX = await import('https://cdn.sheetjs.com/xlsx-0.19.3/package/xlsx.mjs');
-            } catch (e2) {
-              console.error('Error cargando XLSX desde CDN:', e2);
-              alert('Error al cargar la librería Excel. Verifica tu conexión a internet.');
-              return;
-            }
-          }
-          
           const wsData = [
             ['Campo', 'Valor'],
-            ['ID', transaccion.id],
+            ['Número de Transacción', transaccion.numero_transaccion || transaccion.id],
             ['Fecha', new Date(transaccion.fecha).toLocaleString('es-CO')],
             ['Tipo', transaccion.tipo === 'ingreso' ? 'Ingreso' : 'Egreso'],
-            ['Monto', {
-              t: 'n',
-              v: transaccion.monto,
-              z: '"$"#,##0.00_);[Red]\\-\\("$"#,##0.00\\)' // Formato de moneda
-            }],
+            ['Monto', transaccion.monto],
             ['Categoría', transaccion.categoria_nombre || 'N/A'],
             ['Actividad', transaccion.actividad_nombre || 'N/A'],
             ['Persona', transaccion.persona_nombre || 'N/A'],
+            ['Estado', transaccion.estado === 'anulada' ? 'Anulada' : 'Activa'],
             ['Descripción', transaccion.descripcion || '']
           ];
           
           const wb = XLSX.utils.book_new();
           const ws = XLSX.utils.aoa_to_sheet(wsData);
           
-          // Ajustar el ancho de las columnas
-          const wscols = [
-            { wch: 15 }, // Ancho de la columna de campo
-            { wch: 30 }  // Ancho de la columna de valor
+          // Ajustar ancho de columnas
+          ws['!cols'] = [
+            { wch: 20 },
+            { wch: 30 }
           ];
-          ws['!cols'] = wscols;
           
           XLSX.utils.book_append_sheet(wb, ws, 'Transacción');
-          XLSX.writeFile(wb, `transaccion_${transaccion.id}.xlsx`);
+          
+          const filename = `transaccion_${transaccion.numero_transaccion || transaccion.id}.xlsx`;
+          XLSX.writeFile(wb, filename);
           
         } catch (error) {
           console.error('Error al exportar a Excel:', error);
-          alert('Error al exportar a Excel. Por favor, inténtalo de nuevo.');
+          alert('Error al exportar a Excel: ' + (error instanceof Error ? error.message : 'Error desconocido'));
         }
       });
     });

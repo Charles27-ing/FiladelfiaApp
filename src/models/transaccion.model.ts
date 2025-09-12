@@ -9,6 +9,9 @@ export interface Transaccion {
     user_id?: string; // UUID del usuario que registra
     persona_id?: string; // UUID de persona, opcional
     evidencia?: string; // URL de archivo en Storage
+    numero_transaccion?: string; // Número único de transacción (ej: ING001, EGR001)
+    estado?: 'activa' | 'anulada'; // Estado de la transacción
+    notas_anulacion?: string; // Razón de anulación si aplica
     created_at: string;
     updated_at: string;
   }
