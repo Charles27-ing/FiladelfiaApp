@@ -148,6 +148,12 @@ const userEmail = session.user?.email || 'Invitado';
 									</svg>
 									Listado de Transacciones
 								</a>
+								<a href="/contabilidad/actividades" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPath.startsWith('/contabilidad/actividades') ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
+									<svg class={`mr-3 h-4 w-4 ${currentPath.startsWith('/contabilidad/actividades') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+									</svg>
+									Actividades
+								</a>
 							</div>
 						</div>
 
@@ -275,6 +281,9 @@ const userEmail = session.user?.email || 'Invitado';
 							</a>
 							<a href="/contabilidad/transacciones" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
 								Listado de Transacciones
+							</a>
+							<a href="/contabilidad/actividades" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
+								Actividades
 							</a>
 							<a href="/reportes" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
 								Reportes

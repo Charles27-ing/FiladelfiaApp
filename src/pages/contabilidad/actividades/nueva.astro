@@ -1,0 +1,181 @@
+---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
+
+const url = new URL(Astro.request.url);
+const errorMessage = url.searchParams.get('error');
+const successMessage = url.searchParams.get('success');
+---
+
+<LayoutProtected title="Nueva Actividad">
+  <div class="max-w-2xl mx-auto">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Nueva Actividad</h1>
+      <a href="/contabilidad/actividades" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+        Volver a Actividades
+      </a>
+    </div>
+
+    {errorMessage && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+        {errorMessage}
+      </div>
+    )}
+
+    {successMessage && (
+      <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md">
+        {successMessage}
+      </div>
+    )}
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <form method="POST" action="/api/contabilidad/actividades" class="space-y-6">
+        <div>
+          <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
+            Nombre de la Actividad *
+          </label>
+          <input
+            type="text"
+            id="nombre"
+            name="nombre"
+            required
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Ej: Campaña de Navidad 2024"
+          />
+        </div>
+
+        <div>
+          <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-2">
+            Descripción
+          </label>
+          <textarea
+            id="descripcion"
+            name="descripcion"
+            rows="4"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Describe los objetivos y detalles de la actividad..."
+          ></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">
+              Fecha de Inicio *
+            </label>
+            <input
+              type="date"
+              id="fecha_inicio"
+              name="fecha_inicio"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">
+              Fecha de Fin
+            </label>
+            <input
+              type="date"
+              id="fecha_fin"
+              name="fecha_fin"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="estado" class="block text-sm font-medium text-gray-700 mb-2">
+              Estado
+            </label>
+            <select
+              id="estado"
+              name="estado"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="planeada">Planeada</option>
+              <option value="en_curso" selected>En Curso</option>
+              <option value="completada">Completada</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="meta" class="block text-sm font-medium text-gray-700 mb-2">
+              Meta de Recaudación (COP)
+            </label>
+            <input
+              type="number"
+              id="meta"
+              name="meta"
+              min="0"
+              step="1000"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="0"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-4">
+          <a
+            href="/contabilidad/actividades"
+            class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Cancelar
+          </a>
+          <button
+            type="submit"
+            class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Crear Actividad
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Validación del formulario
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.querySelector('form') as HTMLFormElement;
+      const fechaInicio = document.getElementById('fecha_inicio') as HTMLInputElement;
+      const fechaFin = document.getElementById('fecha_fin') as HTMLInputElement;
+
+      if (!form || !fechaInicio || !fechaFin) return;
+
+      // Establecer fecha mínima como hoy
+      const today = new Date().toISOString().split('T')[0];
+      fechaInicio.min = today;
+
+      // Validar que la fecha de fin sea posterior a la de inicio
+      fechaInicio.addEventListener('change', function() {
+        if (this.value) {
+          fechaFin.min = this.value;
+        }
+      });
+
+      form.addEventListener('submit', function(e) {
+        const nombre = (document.getElementById('nombre') as HTMLInputElement)?.value.trim();
+        const fechaInicioValue = fechaInicio.value;
+
+        if (!nombre) {
+          e.preventDefault();
+          alert('El nombre de la actividad es requerido');
+          return;
+        }
+
+        if (!fechaInicioValue) {
+          e.preventDefault();
+          alert('La fecha de inicio es requerida');
+          return;
+        }
+
+        // Validar fechas si ambas están presentes
+        if (fechaInicioValue && fechaFin.value && fechaFin.value < fechaInicioValue) {
+          e.preventDefault();
+          alert('La fecha de fin debe ser posterior a la fecha de inicio');
+          return;
+        }
+      });
+    });
+  </script>
+</LayoutProtected>

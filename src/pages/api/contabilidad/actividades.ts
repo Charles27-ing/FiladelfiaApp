@@ -33,44 +33,41 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   console.log("--- [API /api/contabilidad/actividades] Petición POST recibida ---");
 
   try {
-    // 1. Autenticación
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("[API] Error de autenticación:", authError);
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
-    // 2. Datos
     const formData = await request.formData();
     const nombre = formData.get('nombre')?.toString();
     const descripcion = formData.get('descripcion')?.toString() || null;
     const fecha_inicio = formData.get('fecha_inicio')?.toString();
     const fecha_fin = formData.get('fecha_fin')?.toString() || null;
     const estado = formData.get('estado')?.toString() || 'en_curso';
+    const meta = parseFloat(formData.get('meta')?.toString() || '0') || 0;
 
-    // 3. Validación
     if (!nombre || !fecha_inicio) {
-      return redirect('/contabilidad?error=' + encodeURIComponent('Nombre y fecha_inicio son requeridos'));
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Nombre y fecha_inicio son requeridos'));
     }
 
-    // 4. Inserción
     const { data, error: insertError } = await supabase
       .from('actividades')
-      .insert([{ nombre, descripcion, fecha_inicio, fecha_fin, estado, user_id: user.id }])
+      .insert([{ nombre, descripcion, fecha_inicio, fecha_fin, estado, meta, user_id: user.id }])
       .select()
       .single();
 
     if (insertError) {
       console.error("[API] Error al insertar actividad:", insertError);
-      return redirect('/contabilidad?error=' + encodeURIComponent('Error al guardar la actividad'));
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al guardar la actividad'));
     }
 
     console.log("[API] Actividad insertada exitosamente:", data.id);
 
-    return redirect('/contabilidad?success=' + encodeURIComponent('Actividad registrada exitosamente ✅'));
+    return redirect('/contabilidad/actividades?success=' + encodeURIComponent('Actividad registrada exitosamente ✅'));
 
   } catch (error) {
     console.error("[API] Error inesperado:", error);
-    return redirect('/contabilidad?error=' + encodeURIComponent('Error al registrar la actividad'));
+    return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al registrar la actividad'));
   }
 };

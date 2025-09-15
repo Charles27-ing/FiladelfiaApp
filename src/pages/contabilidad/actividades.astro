@@ -1,0 +1,135 @@
+---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
+import type { Actividad } from '../../models/actividad.model';
+
+const baseUrl = Astro.url.origin;
+let actividades: Actividad[] = [];
+let error: string | null = null;
+
+try {
+  const res = await fetch(`${baseUrl}/api/contabilidad/actividades`);
+  if (res.ok) {
+    actividades = await res.json();
+  } else {
+    error = 'No se pudieron cargar las actividades';
+  }
+} catch (err) {
+  error = 'Error al cargar las actividades';
+}
+const url = new URL(Astro.request.url);
+const successMessage = url.searchParams.get('success');
+const errorMessage = url.searchParams.get('error');
+---
+<LayoutProtected title="Gestión de Actividades">
+    <div class="max-w-6xl mx-auto p-4">
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold">Actividades</h1>
+          <a href="/contabilidad/actividades/nueva" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+            Nueva Actividad
+          </a>
+        </div>
+    
+        {successMessage && (
+          <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md">
+            {successMessage}
+          </div>
+        )}
+        {errorMessage && (
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+            {errorMessage}
+          </div>
+        )}
+        {error && (
+          <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+            {error}
+          </div>
+        )}
+    
+        {actividades.length > 0 ? (
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {actividades.map((actividad) => (
+              <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="text-lg font-semibold text-gray-900">{actividad.nombre}</h3>
+                    <p class="text-sm text-gray-500 mt-1 line-clamp-2">{actividad.descripcion || 'Sin descripción'}</p>
+                  </div>
+                  <span class={`px-2 py-1 rounded-full text-xs font-semibold ${actividad.estado === 'completada' ? 'bg-green-100 text-green-700' : actividad.estado === 'en_curso' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                    {actividad.estado}
+                  </span>
+                </div>
+
+                <div class="mt-4">
+                  <p class="text-xs text-gray-500">Meta: <span class="font-medium text-gray-700">{(actividad as any).meta?.toLocaleString() ?? '0'} COP</span></p>
+                  <p class="text-xs text-gray-500 mt-1">Inicio: {new Date(actividad.fecha_inicio).toLocaleDateString('es-CO')}</p>
+                </div>
+
+                <div class="mt-4">
+                  <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: 0%" id={`progress-${actividad.id}`}></div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2" id={`progress-text-${actividad.id}`}>Calculando progreso...</p>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between">
+                  <div class="space-x-3">
+                    <a href={`/contabilidad/actividades/${actividad.id}/seguimiento`} class="text-blue-600 hover:text-blue-800 text-sm">Seguimiento</a>
+                    <a href={`/contabilidad/actividades/${actividad.id}/editar`} class="text-gray-600 hover:text-gray-800 text-sm">Editar</a>
+                  </div>
+                  <button class="text-red-600 hover:text-red-800 text-sm" onclick={`confirmarEliminar('${actividad.id}')`}>Eliminar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-10 text-center text-gray-500">
+            No hay actividades registradas
+          </div>
+        )}
+      </div>
+    
+      <script>
+        function confirmarEliminar(id: string) {
+          if (!confirm('¿Estás seguro de que quieres eliminar esta actividad? Esto eliminará todas las transacciones asociadas.')) return;
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = `/api/contabilidad/actividades/${id}`;
+          const method = document.createElement('input');
+          method.type = 'hidden';
+          method.name = '_method';
+          method.value = 'DELETE';
+          form.appendChild(method);
+          document.body.appendChild(form);
+          form.submit();
+        }
+      </script>
+
+      <script>
+        // Cargar y pintar progreso por actividad
+        (async function(){
+          try {
+            const cards = document.querySelectorAll('[id^="progress-"]');
+            for (const el of Array.from(cards) as HTMLElement[]) {
+              const id = el.id.replace('progress-', '');
+              const res = await fetch(`${location.origin}/api/contabilidad/transacciones?actividad_id=${id}`);
+              if (!res.ok) continue;
+              const trans: any[] = await res.json();
+              const ingresos = trans.reduce((s: number, t: any) => t.tipo === 'ingreso' ? s + (t.monto || 0) : s, 0);
+              const metaEl = el.closest('div.bg-white')?.querySelector('p.text-xs span');
+              const metaText = metaEl?.textContent?.replace(/[^0-9]/g, '') || '0';
+              const meta = parseFloat(metaText) || 0;
+              const pct = meta > 0 ? Math.min((ingresos / meta) * 100, 100) : 0;
+              el.style.width = `${pct.toFixed(0)}%`;
+              const text = document.getElementById(`progress-text-${id}`);
+              if (text) text.textContent = `${pct.toFixed(0)}% (${ingresos.toLocaleString()} / ${meta.toLocaleString()} COP)`;
+            }
+          } catch (e) {
+            console.warn('No se pudo calcular progreso por tarjeta', e);
+          }
+        })();
+      </script>
+    
+      <style>
+        /* Estilos adicionales si es necesario */
+      </style>
+</LayoutProtected>

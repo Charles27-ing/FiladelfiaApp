@@ -1,0 +1,143 @@
+---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
+import type { Actividad } from '@models/actividad.model';
+import type { Transaccion } from '@models/transaccion.model';  
+
+const { id } = Astro.params;
+const baseUrl = Astro.url.origin;
+
+let actividad: Actividad | null = null;
+let transacciones: Transaccion[] = [];
+let error: string | null = null;
+let progreso: number = 0;
+let totalIngresos: number = 0;
+let totalEgresos: number = 0;
+let totalRecaudado: number = 0;
+try {
+  const [actividadRes, transaccionesRes] = await Promise.all([
+    fetch(`${baseUrl}/api/contabilidad/actividades/${id}`),
+    fetch(`${baseUrl}/api/contabilidad/transacciones?actividad_id=${id}`)
+  ]);
+  if (actividadRes.ok) {
+    actividad = await actividadRes.json();
+  }
+  if (transaccionesRes.ok) {
+    transacciones = await transaccionesRes.json();
+  }
+} catch (err) {
+  error = 'Error al cargar los datos';
+}
+
+// Totales y progreso seguro (solo transacciones activas)
+const transaccionesActivas = transacciones.filter(t => t.estado !== 'anulada');
+totalIngresos = transaccionesActivas.reduce((sum, t) => t.tipo === 'ingreso' ? sum + (t.monto || 0) : sum, 0);
+totalEgresos = transaccionesActivas.reduce((sum, t) => t.tipo === 'egreso' ? sum + (t.monto || 0) : sum, 0);
+totalRecaudado = totalIngresos;
+const meta = (actividad as any)?.meta || 0;
+progreso = meta > 0 ? Math.min((totalRecaudado / meta) * 100, 100) : 0;
+---
+
+<LayoutProtected title={`Seguimiento de ${actividad?.nombre || 'Actividad'}`}>
+  <div class="max-w-5xl mx-auto p-4">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Seguimiento de {actividad?.nombre}</h1>
+      <a href="/contabilidad/actividades" class="bg-gray-300 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-400">
+        Volver a Actividades
+      </a>
+    </div>
+
+    {error && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md">
+        {error}
+      </div>
+    )}
+
+    {actividad && (
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Estado</p>
+            <span class={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold mt-1 ${actividad.estado === 'completada' ? 'bg-green-100 text-green-700' : actividad.estado === 'en_curso' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700'}`}>
+              {actividad.estado}
+            </span>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Fecha Inicio</p>
+            <p class="text-base font-semibold text-gray-900 mt-1">{new Date(actividad.fecha_inicio).toLocaleDateString('es-CO')}</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Meta</p>
+            <p class="text-base font-semibold text-gray-900 mt-1">{(actividad as any).meta?.toLocaleString()} COP</p>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wide text-gray-500">Recaudado</p>
+            <p class="text-base font-semibold text-gray-900 mt-1">{totalRecaudado.toLocaleString()} COP</p>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <p class="text-sm font-medium text-gray-700">Progreso</p>
+            <p class="text-sm text-gray-600">{Math.round(progreso)}%</p>
+          </div>
+          <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+            <div class="bg-blue-600 h-3 rounded-full transition-all duration-500" style={`width: ${Math.min(progreso, 100)}%`}></div>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">{totalRecaudado.toLocaleString()} / {(actividad as any).meta?.toLocaleString()} COP</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Ingresos</p>
+            <p class="text-lg font-bold text-green-700 mt-1">+ {totalIngresos.toLocaleString()} COP</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Egresos</p>
+            <p class="text-lg font-bold text-red-700 mt-1">- {totalEgresos.toLocaleString()} COP</p>
+          </div>
+          <div class="bg-gray-50 rounded-lg p-4">
+            <p class="text-xs uppercase tracking-wide text-gray-500">Balance</p>
+            <p class="text-lg font-bold text-gray-900 mt-1">{(totalIngresos - totalEgresos).toLocaleString()} COP</p>
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <p class="text-sm text-gray-600">Descripción</p>
+          <p class="text-base mt-1">{actividad.descripcion || 'N/A'}</p>
+        </div>
+      </div>
+    )}
+
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h2 class="text-xl font-bold mb-4">Transacciones Asociadas</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white border border-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Persona</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Descripción</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            {transacciones.length > 0 ? transacciones.map((t: Transaccion) => (
+              <tr>
+                <td class="px-6 py-4">{new Date(t.fecha).toLocaleDateString('es-CO')}</td>
+                <td class="px-6 py-4">{t.monto.toLocaleString()} COP</td>
+                <td class="px-6 py-4">{t.tipo}</td>
+                <td class="px-6 py-4">{(t as any).persona_nombre || 'N/A'}</td>
+                <td class="px-6 py-4">{t.descripcion || 'N/A'}</td>
+              </tr>
+            )) : (
+              <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">No hay transacciones asociadas</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</LayoutProtected>
