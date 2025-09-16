@@ -1,5 +1,6 @@
 ---
 import LayoutProtected from '@layouts/LayoutProtected.astro';
+import Preloader from '@components/Preloader.astro';
 
 const url = new URL(Astro.request.url);
 const errorMessage = url.searchParams.get('error');
@@ -28,7 +29,7 @@ const successMessage = url.searchParams.get('success');
     )}
 
     <div class="bg-white rounded-lg shadow-md p-6">
-      <form method="POST" action="/api/contabilidad/actividades" class="space-y-6">
+      <form id="actividad-form" class="space-y-6">
         <div>
           <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">
             Nombre de la Actividad *
@@ -112,6 +113,7 @@ const successMessage = url.searchParams.get('success');
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="0"
             />
+            <div id="meta-preview" class="mt-1 text-sm text-gray-600"></div>
           </div>
         </div>
 
@@ -133,14 +135,27 @@ const successMessage = url.searchParams.get('success');
     </div>
   </div>
 
-  <script>
+  <script define:vars={{ successMessage }}>
+    // Función para formatear moneda
+    function formatCurrency(amount) {
+      if (amount === 0 || isNaN(amount)) return '';
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    }
+
     // Validación del formulario
     document.addEventListener('DOMContentLoaded', function() {
-      const form = document.querySelector('form') as HTMLFormElement;
-      const fechaInicio = document.getElementById('fecha_inicio') as HTMLInputElement;
-      const fechaFin = document.getElementById('fecha_fin') as HTMLInputElement;
+      const form = document.querySelector('form');
+      const fechaInicio = document.getElementById('fecha_inicio');
+      const fechaFin = document.getElementById('fecha_fin');
+      const metaInput = document.getElementById('meta');
+      const metaPreview = document.getElementById('meta-preview');
 
-      if (!form || !fechaInicio || !fechaFin) return;
+      if (!form || !fechaInicio || !fechaFin || !metaInput || !metaPreview) return;
 
       // Establecer fecha mínima como hoy
       const today = new Date().toISOString().split('T')[0];
@@ -153,29 +168,100 @@ const successMessage = url.searchParams.get('success');
         }
       });
 
-      form.addEventListener('submit', function(e) {
-        const nombre = (document.getElementById('nombre') as HTMLInputElement)?.value.trim();
+      // Formateo y validación de meta
+      metaInput.addEventListener('input', function() {
+        const value = parseFloat(this.value) || 0;
+
+        // Mostrar vista previa formateada
+        if (value > 0) {
+          metaPreview.textContent = `Vista previa: ${formatCurrency(value)}`;
+          metaPreview.className = 'mt-1 text-sm text-green-600';
+        } else if (value < 0) {
+          metaPreview.textContent = 'La meta debe ser un valor positivo';
+          metaPreview.className = 'mt-1 text-sm text-red-600';
+        } else {
+          metaPreview.textContent = '';
+        }
+
+        // Validación: prevenir valores negativos
+        if (value < 0) {
+          this.value = '0';
+          metaPreview.textContent = 'La meta debe ser un valor positivo';
+          metaPreview.className = 'mt-1 text-sm text-red-600';
+        }
+      });
+
+      // Validación inicial si hay valor
+      if (metaInput.value) {
+        const event = new Event('input');
+        metaInput.dispatchEvent(event);
+      }
+
+      form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const nombre = document.getElementById('nombre')?.value.trim();
         const fechaInicioValue = fechaInicio.value;
+        const metaValue = parseFloat(metaInput.value) || 0;
 
         if (!nombre) {
-          e.preventDefault();
           alert('El nombre de la actividad es requerido');
           return;
         }
 
         if (!fechaInicioValue) {
-          e.preventDefault();
           alert('La fecha de inicio es requerida');
+          return;
+        }
+
+        // Validar meta positiva
+        if (metaValue <= 0) {
+          alert('La meta de recaudación debe ser un valor positivo mayor a cero');
+          metaInput.focus();
           return;
         }
 
         // Validar fechas si ambas están presentes
         if (fechaInicioValue && fechaFin.value && fechaFin.value < fechaInicioValue) {
-          e.preventDefault();
           alert('La fecha de fin debe ser posterior a la fecha de inicio');
           return;
+        }
+
+        // Mostrar preloader
+        window.showPreloader();
+
+        try {
+          const formData = new FormData(form);
+          const response = await fetch('/api/contabilidad/actividades', {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.success) {
+            // Éxito: mostrar checkmark
+            window.showPreloaderSuccess(data.message);
+            // Opcional: resetear el form o redirigir después
+            setTimeout(() => {
+              window.location.href = '/contabilidad/actividades';
+            }, 3000);
+          } else {
+            // Error: mostrar mensaje
+            window.hidePreloader();
+            alert(data.error || 'Error desconocido');
+          }
+        } catch (error) {
+          console.error('Error al enviar el formulario:', error);
+          window.hidePreloader();
+          alert('Error de conexión. Inténtalo de nuevo.');
         }
       });
     });
   </script>
+
+  <Preloader />
 </LayoutProtected>

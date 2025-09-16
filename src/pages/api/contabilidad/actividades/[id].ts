@@ -46,16 +46,25 @@ export const GET: APIRoute = async ({ params }) => {
 export const PUT: APIRoute = async ({ params, request, redirect }) => {
   console.log("--- [API /api/contabilidad/actividades/[id]] Petición PUT recibida ---");
 
+  const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
+
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("[API] Error de autenticación:", authError);
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
+      }
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
     const id = params.id;
     if (!id) {
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('ID de actividad requerido'));
+      const errorMsg = 'ID de actividad requerido';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     const formData = await request.formData();
@@ -68,18 +77,57 @@ export const PUT: APIRoute = async ({ params, request, redirect }) => {
 
     // Validación
     if (!nombre || !fecha_inicio) {
-      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('Nombre y fecha_inicio son requeridos'));
+      const errorMsg = 'Nombre y fecha_inicio son requeridos';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent(errorMsg));
+    }
+
+    // Validación: Meta debe ser positiva
+    if (meta <= 0) {
+      const errorMsg = 'La meta de recaudación debe ser un valor positivo mayor a cero';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent(errorMsg));
+    }
+
+    // Validación: Nombre único (excluyendo la actividad actual)
+    const { data: existingActivity, error: checkError } = await supabase
+      .from('actividades')
+      .select('id')
+      .eq('nombre', nombre)
+      .eq('user_id', user.id)
+      .neq('id', id)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error("[API] Error al verificar nombre único:", checkError);
+      const errorMsg = 'Error al validar el nombre de la actividad';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent(errorMsg));
+    }
+
+    if (existingActivity) {
+      const errorMsg = 'Ya existe una actividad con este nombre';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent(errorMsg));
     }
 
     // Actualización
     const { data, error: updateError } = await supabase
       .from('actividades')
-      .update({ 
-        nombre, 
-        descripcion, 
-        fecha_inicio, 
-        fecha_fin, 
-        estado, 
+      .update({
+        nombre,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        estado,
         meta,
         updated_at: new Date().toISOString()
       })
@@ -89,32 +137,74 @@ export const PUT: APIRoute = async ({ params, request, redirect }) => {
 
     if (updateError) {
       console.error("[API] Error al actualizar actividad:", updateError);
-      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('Error al actualizar la actividad'));
+      const errorMsg = 'Error al actualizar la actividad';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent(errorMsg));
     }
 
     console.log("[API] Actividad actualizada exitosamente:", data.id);
 
-    return redirect('/contabilidad/actividades?success=' + encodeURIComponent('Actividad actualizada exitosamente ✅'));
+    const successMsg = '¡Actividad actualizada con éxito!';
+    if (isAjax) {
+      return new Response(JSON.stringify({ success: true, message: successMsg }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return redirect('/contabilidad/actividades?success=' + encodeURIComponent(successMsg));
 
   } catch (error) {
     console.error("[API] Error inesperado en PUT:", error);
-    return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al actualizar la actividad'));
+    const errorMsg = 'Error al actualizar la actividad';
+    if (isAjax) {
+      return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+    }
+    return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
   }
 };
 
-export const DELETE: APIRoute = async ({ params, redirect }) => {
+export const DELETE: APIRoute = async ({ params, request, redirect }) => {
   console.log("--- [API /api/contabilidad/actividades/[id]] Petición DELETE recibida ---");
+
+  const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
 
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("[API] Error de autenticación:", authError);
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
+      }
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
     const id = params.id;
     if (!id) {
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('ID de actividad requerido'));
+      const errorMsg = 'ID de actividad requerido';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
+    }
+
+    // Verificar que la actividad pertenece al usuario
+    const { data: actividad, error: actividadError } = await supabase
+      .from('actividades')
+      .select('id')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (actividadError || !actividad) {
+      console.error("[API] Actividad no encontrada o no pertenece al usuario:", actividadError);
+      const errorMsg = 'Actividad no encontrada';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 404 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     // Verificar si la actividad tiene transacciones asociadas
@@ -126,11 +216,19 @@ export const DELETE: APIRoute = async ({ params, redirect }) => {
 
     if (transaccionesError) {
       console.error("[API] Error al verificar transacciones:", transaccionesError);
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al verificar transacciones asociadas'));
+      const errorMsg = 'Error al verificar transacciones asociadas';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     if (transacciones && transacciones.length > 0) {
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('No se puede eliminar la actividad porque tiene transacciones asociadas'));
+      const errorMsg = 'No se puede eliminar la actividad porque tiene transacciones asociadas';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     // Eliminar la actividad
@@ -141,16 +239,32 @@ export const DELETE: APIRoute = async ({ params, redirect }) => {
 
     if (deleteError) {
       console.error("[API] Error al eliminar actividad:", deleteError);
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al eliminar la actividad'));
+      const errorMsg = 'Error al eliminar la actividad';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     console.log("[API] Actividad eliminada exitosamente:", id);
 
-    return redirect('/contabilidad/actividades?success=' + encodeURIComponent('Actividad eliminada exitosamente ✅'));
+    const successMsg = '¡Actividad eliminada con éxito!';
+    if (isAjax) {
+      return new Response(JSON.stringify({ success: true, message: successMsg }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return redirect('/contabilidad/actividades?success=' + encodeURIComponent(successMsg));
 
   } catch (error) {
     console.error("[API] Error inesperado en DELETE:", error);
-    return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al eliminar la actividad'));
+    const errorMsg = 'Error al eliminar la actividad';
+    if (isAjax) {
+      return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+    }
+    return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
   }
 };
 
@@ -183,6 +297,29 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
         return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('Nombre y fecha_inicio son requeridos'));
       }
 
+      // Validación: Meta debe ser positiva
+      if (meta <= 0) {
+        return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('La meta de recaudación debe ser un valor positivo mayor a cero'));
+      }
+
+      // Validación: Nombre único (excluyendo la actividad actual)
+      const { data: existingActivity, error: checkError } = await supabase
+        .from('actividades')
+        .select('id')
+        .eq('nombre', nombre)
+        .eq('user_id', user.id)
+        .neq('id', id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error("[API] Error al verificar nombre único:", checkError);
+        return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('Error al validar el nombre de la actividad'));
+      }
+
+      if (existingActivity) {
+        return redirect(`/contabilidad/actividades/${id}/editar?error=` + encodeURIComponent('Ya existe una actividad con este nombre'));
+      }
+
       const { data, error: updateError } = await supabase
         .from('actividades')
         .update({ nombre, descripcion, fecha_inicio, fecha_fin, estado, meta, updated_at: new Date().toISOString() })
@@ -207,6 +344,19 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
       const id = params.id;
       if (!id) {
         return redirect('/contabilidad/actividades?error=' + encodeURIComponent('ID de actividad requerido'));
+      }
+
+      // Verificar que la actividad pertenece al usuario
+      const { data: actividad, error: actividadError } = await supabase
+        .from('actividades')
+        .select('id')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (actividadError || !actividad) {
+        console.error("[API] Actividad no encontrada o no pertenece al usuario:", actividadError);
+        return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Actividad no encontrada'));
       }
 
       const { data: transacciones, error: transaccionesError } = await supabase

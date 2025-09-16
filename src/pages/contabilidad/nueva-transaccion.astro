@@ -61,6 +61,7 @@ try {
 const url = new URL(Astro.request.url);
 const successMessage = url.searchParams.get('success');
 const errorMessage = url.searchParams.get('error');
+const actividadIdParam = url.searchParams.get('actividad_id');
 ---
 
 <LayoutProtected title="Registrar Nueva Transacción">
@@ -712,9 +713,16 @@ const errorMessage = url.searchParams.get('error');
       
       // Inicializar filtrado de categorías
       filtrarCategorias();
-      
+
       // Escuchar cambios en el tipo de transacción
       tipoSelect.addEventListener('change', filtrarCategorias);
+
+      // Pre-seleccionar actividad si viene en la URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const actividadIdFromUrl = urlParams.get('actividad_id');
+      if (actividadIdFromUrl && actividadSelect) {
+        actividadSelect.value = actividadIdFromUrl;
+      }
     });
   </script>
 

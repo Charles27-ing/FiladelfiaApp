@@ -1,6 +1,7 @@
 ---
 // src/pages/personas/index.astro - VERSIÓN FINAL CON CONSULTA CORREGIDA
 import LayoutProtected from "@layouts/LayoutProtected.astro";
+import Preloader from "@components/Preloader.astro";
 import { supabase } from "@lib/supabase";
 
 // Definir interfaces para los tipos de datos
@@ -401,6 +402,7 @@ const errorMessage = Astro.url.searchParams.get("error");
       console.log('Inicialización completada');
     });
   </script>
-  
+
+  <Preloader />
 </LayoutProtected>
 

@@ -4,6 +4,8 @@ import { supabase } from '@lib/supabase';
 export const POST: APIRoute = async ({ request, redirect }) => {
   console.log("--- [API /api/personas] Petición POST recibida ---");
 
+  const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
+
   try {
     // --- 1. OBTENER USUARIO DE LA SESIÓN ---
     // Para formularios HTML, obtenemos el usuario de la sesión de cookies
@@ -11,6 +13,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     if (authError || !user) {
       console.error("[API] Error de autenticación:", authError);
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
+      }
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
@@ -155,9 +160,17 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     // --- 9. RESPUESTA EXITOSA ---
     console.log("[API] Proceso completado exitosamente");
-    
+
+    const successMsg = '¡Persona registrada con éxito!';
+    if (isAjax) {
+      return new Response(JSON.stringify({ success: true, message: successMsg }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Redirigir al listado de personas con mensaje de éxito
-    return redirect('/personas?success=' + encodeURIComponent('Persona registrada exitosamente ✅'));
+    return redirect('/personas?success=' + encodeURIComponent(successMsg));
 
   } catch (error) {
     console.error("[API] Error inesperado:", error);

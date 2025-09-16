@@ -1,5 +1,6 @@
 ---
 import LayoutProtected from '@layouts/LayoutProtected.astro';
+import Preloader from '@components/Preloader.astro';
 import type { Actividad } from '../../models/actividad.model';
 
 const baseUrl = Astro.url.origin;
@@ -89,18 +90,45 @@ const errorMessage = url.searchParams.get('error');
       </div>
     
       <script>
-        function confirmarEliminar(id: string) {
+        async function confirmarEliminar(id: string) {
           if (!confirm('¿Estás seguro de que quieres eliminar esta actividad? Esto eliminará todas las transacciones asociadas.')) return;
-          const form = document.createElement('form');
-          form.method = 'POST';
-          form.action = `/api/contabilidad/actividades/${id}`;
-          const method = document.createElement('input');
-          method.type = 'hidden';
-          method.name = '_method';
-          method.value = 'DELETE';
-          form.appendChild(method);
-          document.body.appendChild(form);
-          form.submit();
+
+          // Mostrar preloader
+          window.showPreloader();
+
+          try {
+            const response = await fetch(`/api/contabilidad/actividades/${id}`, {
+              method: 'DELETE',
+              headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+              }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+              // Éxito: mostrar checkmark
+              window.showPreloaderSuccess(data.message);
+              // Remover el elemento de la actividad después de 1 segundo
+              setTimeout(() => {
+                const actividadCard = document.querySelector(`[onclick*="confirmarEliminar('${id}')"]`);
+                if (actividadCard) {
+                  const card = actividadCard.closest('.bg-white.rounded-xl');
+                  if (card) {
+                    card.remove();
+                  }
+                }
+              }, 1000);
+            } else {
+              // Error: mostrar mensaje
+              window.hidePreloader();
+              alert(data.error || 'Error desconocido');
+            }
+          } catch (error) {
+            console.error('Error al eliminar:', error);
+            window.hidePreloader();
+            alert('Error de conexión. Inténtalo de nuevo.');
+          }
         }
       </script>
 
@@ -132,4 +160,6 @@ const errorMessage = url.searchParams.get('error');
       <style>
         /* Estilos adicionales si es necesario */
       </style>
-</LayoutProtected>
+
+      <Preloader />
+  </LayoutProtected>

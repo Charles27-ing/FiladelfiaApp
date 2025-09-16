@@ -3,12 +3,18 @@ import type { APIRoute } from "astro";
 import { supabase } from "@/lib/supabase";
 
 export const POST: APIRoute = async ({ params, request, redirect }) => {
+  const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
+
   try {
     const { id } = params;
 
     if (!id) {
       console.error("ID de persona no proporcionado");
-      return redirect(`/personas?error=${encodeURIComponent("ID de persona no válido")}`);
+      const errorMsg = "ID de persona no válido";
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/personas?error=${encodeURIComponent(errorMsg)}`);
     }
 
     console.log(`[UPDATE] Iniciando actualización de persona con ID: ${id}`);
@@ -36,21 +42,33 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
     // ✅ VALIDACIONES BÁSICAS
     if (!nombres || !primer_apellido || !numero_id || !tipo_id || !email || !telefono) {
       console.error("Campos obligatorios faltantes");
-      return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Todos los campos obligatorios deben ser completados")}`);
+      const errorMsg = "Todos los campos obligatorios deben ser completados";
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
     }
 
     // Validar email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       console.error("Email inválido:", email);
-      return redirect(`/personas/${id}/editar?error=${encodeURIComponent("El email no tiene un formato válido")}`);
+      const errorMsg = "El email no tiene un formato válido";
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
     }
 
     // Validar teléfono (solo números, 7-10 dígitos)
     const telefonoRegex = /^[0-9]{7,10}$/;
     if (!telefonoRegex.test(telefono)) {
       console.error("Teléfono inválido:", telefono);
-      return redirect(`/personas/${id}/editar?error=${encodeURIComponent("El teléfono debe contener solo números (7-10 dígitos)")}`);
+      const errorMsg = "El teléfono debe contener solo números (7-10 dígitos)";
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
     }
 
     console.log("[UPDATE] Datos básicos validados correctamente");
@@ -65,14 +83,22 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
       // Validar tamaño (máx 5MB)
       if (fotoArchivo.size > 5 * 1024 * 1024) {
         console.error("Archivo de foto demasiado grande:", fotoArchivo.size);
-        return redirect(`/personas/${id}/editar?error=${encodeURIComponent("La imagen no puede superar los 5MB")}`);
+        const errorMsg = "La imagen no puede superar los 5MB";
+        if (isAjax) {
+          return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+        }
+        return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
       }
 
       // Validar tipo de archivo
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(fotoArchivo.type)) {
         console.error("Tipo de archivo no permitido:", fotoArchivo.type);
-        return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Solo se permiten archivos JPG, PNG o WebP")}`);
+        const errorMsg = "Solo se permiten archivos JPG, PNG o WebP";
+        if (isAjax) {
+          return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+        }
+        return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
       }
 
       try {
@@ -81,7 +107,11 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
         
         if (bucketsError) {
           console.error("Error al listar buckets:", bucketsError);
-          return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Error de configuración de almacenamiento")}`);
+          const errorMsg = "Error de configuración de almacenamiento";
+          if (isAjax) {
+            return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+          }
+          return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
         }
 
         const bucketName = "fotos_personas";
@@ -109,9 +139,13 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
           });
 
         if (uploadError) {
-          console.error("Error al subir archivo:", uploadError);
-          return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Error al subir la imagen: " + uploadError.message)}`);
-        }
+           console.error("Error al subir archivo:", uploadError);
+           const errorMsg = "Error al subir la imagen: " + uploadError.message;
+           if (isAjax) {
+             return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+           }
+           return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
+         }
 
         // ✅ OBTENER URL PÚBLICA
         const { data: publicUrlData } = supabase.storage
@@ -179,7 +213,11 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
 
     if (updateError) {
       console.error("Error al actualizar persona:", updateError);
-      return redirect(`/personas/${id}/editar?error=${encodeURIComponent("Error al actualizar los datos: " + updateError.message)}`);
+      const errorMsg = "Error al actualizar los datos: " + updateError.message;
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect(`/personas/${id}/editar?error=${encodeURIComponent(errorMsg)}`);
     }
 
     console.log("[UPDATE] Datos principales actualizados correctamente");
@@ -254,12 +292,19 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
 
     console.log("[UPDATE] Actualización completada exitosamente");
 
+    const successMsg = "¡Persona actualizada con éxito!";
+    if (isAjax) {
+      return new Response(JSON.stringify({ success: true, message: successMsg }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     // Redirigir con mensaje de éxito
-    return redirect(`/personas/${id}?success=${encodeURIComponent("Información actualizada correctamente")}`);
+    return redirect(`/personas/${id}?success=${encodeURIComponent(successMsg)}`);
 
   } catch (error) {
     console.error("Error general en actualización:", error);
-    return redirect(`/personas/${params.id}/editar?error=${encodeURIComponent("Error interno del servidor")}`);
+    return redirect(`/personas/${params.id}/editar?error=${encodeURIComponent("Error al actualizar la persona. Por favor, inténtalo de nuevo.")}`);
   }
 };
-

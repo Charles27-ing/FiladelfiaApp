@@ -32,10 +32,15 @@ export const GET: APIRoute = async () => {
 export const POST: APIRoute = async ({ request, redirect }) => {
   console.log("--- [API /api/contabilidad/actividades] Petición POST recibida ---");
 
+  const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
+
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       console.error("[API] Error de autenticación:", authError);
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
+      }
       return redirect('/login?error=' + encodeURIComponent('Debe iniciar sesión para continuar'));
     }
 
@@ -48,7 +53,45 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     const meta = parseFloat(formData.get('meta')?.toString() || '0') || 0;
 
     if (!nombre || !fecha_inicio) {
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Nombre y fecha_inicio son requeridos'));
+      const errorMsg = 'Nombre y fecha_inicio son requeridos';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
+    }
+
+    // Validación: Meta debe ser positiva
+    if (meta <= 0) {
+      const errorMsg = 'La meta de recaudación debe ser un valor positivo mayor a cero';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
+    }
+
+    // Validación: Nombre único
+    const { data: existingActivity, error: checkError } = await supabase
+      .from('actividades')
+      .select('id')
+      .eq('nombre', nombre)
+      .eq('user_id', user.id)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows returned
+      console.error("[API] Error al verificar nombre único:", checkError);
+      const errorMsg = 'Error al validar el nombre de la actividad';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
+    }
+
+    if (existingActivity) {
+      const errorMsg = 'Ya existe una actividad con este nombre';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     const { data, error: insertError } = await supabase
@@ -59,15 +102,31 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     if (insertError) {
       console.error("[API] Error al insertar actividad:", insertError);
-      return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al guardar la actividad'));
+      const errorMsg = 'Error al guardar la actividad';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
     console.log("[API] Actividad insertada exitosamente:", data.id);
 
-    return redirect('/contabilidad/actividades?success=' + encodeURIComponent('Actividad registrada exitosamente ✅'));
+    const successMsg = '¡Actividad registrada con éxito!';
+    if (isAjax) {
+      return new Response(JSON.stringify({ success: true, message: successMsg }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return redirect('/contabilidad/actividades?success=' + encodeURIComponent(successMsg));
 
   } catch (error) {
     console.error("[API] Error inesperado:", error);
-    return redirect('/contabilidad/actividades?error=' + encodeURIComponent('Error al registrar la actividad'));
+    const errorMsg = 'Error al registrar la actividad';
+    if (isAjax) {
+      return new Response(JSON.stringify({ error: errorMsg }), { status: 500 });
+    }
+    return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
   }
 };

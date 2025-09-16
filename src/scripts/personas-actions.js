@@ -57,34 +57,53 @@ export function deletePerson(personId, personName) {
 /**
  * Envía la solicitud de eliminación al servidor.
  */
-export function confirmDeletePerson() {
+export async function confirmDeletePerson() {
   console.log("Confirmando eliminación para ID:", personToDelete);
-  
+
   if (!personToDelete) {
     console.error('No hay persona seleccionada para eliminar');
     return;
   }
 
-  // Usar fetch para llamar al endpoint de eliminación
-  fetch(`/api/personas/${personToDelete}/delete`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-  .then(response => {
-    if (response.ok) {
-      // Redirigir con mensaje de éxito
-      window.location.href = '/personas?success=' + encodeURIComponent('Persona hkhkhheliminada correctamente');
+  // Mostrar preloader
+  window.showPreloader('eliminando');
+
+  try {
+    const response = await fetch(`/api/personas/${personToDelete}/delete`, {
+      method: 'DELETE',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      // Éxito: mostrar checkmark
+      window.showPreloaderSuccess(data.message);
+      // Remover el elemento de la persona después de 1 segundo
+      setTimeout(() => {
+        // Buscar y remover la fila de la tabla o la tarjeta
+        const personaElement = document.querySelector(`[data-persona-id="${personToDelete}"]`) ||
+                              document.querySelector(`[onclick*="deletePerson('${personToDelete}'"]`);
+        if (personaElement) {
+          const row = personaElement.closest('tr') || personaElement.closest('.bg-white');
+          if (row) {
+            row.remove();
+          }
+        }
+        closeDeleteModal();
+      }, 1000);
     } else {
-      // Redirigir con mensaje de error
-      window.location.href = '/personas?error=' + encodeURIComponent('Error al eliminar la persona');
+      // Error: mostrar mensaje
+      window.hidePreloader();
+      alert(data.error || 'Error desconocido');
     }
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('Error:', error);
-    window.location.href = '/personas?error=' + encodeURIComponent('Error de conexión al eliminar la persona');
-  });
+    window.hidePreloader();
+    alert('Error de conexión. Inténtalo de nuevo.');
+  }
 }
 
 /**
