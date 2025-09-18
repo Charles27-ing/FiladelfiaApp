@@ -1,0 +1,850 @@
+---
+// src/pages/reportes/contabilidad.astro
+import LayoutProtected from "@layouts/LayoutProtected.astro";
+import { supabase } from "@lib/supabase";
+
+// Obtener datos para reportes de contabilidad
+const { data: transacciones, error: transaccionesError } = await supabase
+    .from("transacciones")
+    .select(`
+        id,
+        fecha,
+        monto,
+        tipo,
+        descripcion,
+        estado,
+        categoria:categoria_id(id, nombre),
+        actividad:actividad_id(id, nombre)
+    `)
+    .eq('estado', 'activa') // Solo transacciones activas
+    .order('fecha', { ascending: false });
+
+const { data: actividades, error: actividadesError } = await supabase
+    .from("actividades")
+    .select("id, nombre, estado, meta, fecha_inicio, fecha_fin");
+
+const { data: categorias, error: categoriasError } = await supabase
+    .from("categorias")
+    .select("id, nombre");
+
+if (transaccionesError || actividadesError || categoriasError) {
+    console.error("Error al cargar datos para reportes:", 
+        transaccionesError || actividadesError || categoriasError);
+}
+
+// Función para procesar datos con filtros de fecha
+function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
+    return {
+        // Totales generales
+        totalIngresos: transaccionesFiltradas?.filter(t => t.tipo === 'ingreso')
+            .reduce((sum, t) => sum + t.monto, 0) || 0,
+        totalEgresos: transaccionesFiltradas?.filter(t => t.tipo === 'egreso')
+            .reduce((sum, t) => sum + t.monto, 0) || 0,
+        
+        // Balance
+        get balance() {
+            return this.totalIngresos - this.totalEgresos;
+        },
+        
+        // Actividades completadas
+        actividadesCompletadas: actividadesFiltradas?.filter(a => a.estado === 'completada').length || 0,
+        
+        // Flujo de caja mensual
+        flujoCajaMensual: (() => {
+            const meses = {};
+            const fechaActual = new Date();
+            
+            // Inicializar últimos 12 meses
+            for (let i = 11; i >= 0; i--) {
+                const fecha = new Date(fechaActual.getFullYear(), fechaActual.getMonth() - i, 1);
+                const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                meses[mesKey] = { ingresos: 0, egresos: 0 };
+            }
+            
+            // Procesar transacciones
+            transaccionesFiltradas?.forEach(t => {
+                const fecha = new Date(t.fecha);
+                const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                
+                if (meses[mesKey]) {
+                    if (t.tipo === 'ingreso') {
+                        meses[mesKey].ingresos += t.monto;
+                    } else {
+                        meses[mesKey].egresos += t.monto;
+                    }
+                }
+            });
+            
+            return Object.entries(meses).map(([mes, datos]) => ({
+                mes,
+                ingresos: datos.ingresos,
+                egresos: datos.egresos
+            }));
+        })(),
+        
+        // Distribución de ingresos por categoría
+        ingresosPorCategoria: (() => {
+            const ingresos = transaccionesFiltradas?.filter(t => t.tipo === 'ingreso') || [];
+            const distribucion = {};
+            
+            ingresos.forEach(t => {
+                const categoria = t.categoria?.nombre || 'Sin categoría';
+                distribucion[categoria] = (distribucion[categoria] || 0) + t.monto;
+            });
+            
+            return Object.entries(distribucion).map(([categoria, monto]) => ({
+                categoria,
+                monto
+            }));
+        })(),
+        
+        // Distribución de egresos por categoría
+        egresosPorCategoria: (() => {
+            const egresos = transaccionesFiltradas?.filter(t => t.tipo === 'egreso') || [];
+            const distribucion = {};
+            
+            egresos.forEach(t => {
+                const categoria = t.categoria?.nombre || 'Sin categoría';
+                distribucion[categoria] = (distribucion[categoria] || 0) + t.monto;
+            });
+            
+            return Object.entries(distribucion).map(([categoria, monto]) => ({
+                categoria,
+                monto
+            }));
+        })(),
+        
+        // Estado de actividades
+        estadoActividades: {
+            planeadas: actividadesFiltradas?.filter(a => a.estado === 'planeada').length || 0,
+            enCurso: actividadesFiltradas?.filter(a => a.estado === 'en_curso').length || 0,
+            completadas: actividadesFiltradas?.filter(a => a.estado === 'completada').length || 0
+        },
+        
+        // Cumplimiento de metas por actividad
+        cumplimientoMetas: actividadesFiltradas?.map(actividad => {
+            const ingresosActividad = transaccionesFiltradas?.filter(t => 
+                t.tipo === 'ingreso' && t.actividad?.id === actividad.id
+            ).reduce((sum, t) => sum + t.monto, 0) || 0;
+            
+            return {
+                nombre: actividad.nombre,
+                meta: actividad.meta,
+                recaudado: ingresosActividad,
+                porcentaje: actividad.meta > 0 ? (ingresosActividad / actividad.meta) * 100 : 0
+            };
+        }).slice(0, 10) || [] // Top 10 actividades
+    };
+}
+
+// Datos iniciales (sin filtros)
+const reportDataInicial = procesarDatos(transacciones, actividades);
+
+console.log("[Reportes Contabilidad] Datos procesados:", reportDataInicial);
+---
+
+<LayoutProtected title="Reportes de Contabilidad">
+    <div class="bg-gray-50 min-h-screen p-4 sm:p-8">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                            💰 Reportes de Contabilidad
+                        </h1>
+                        <p class="text-gray-600">
+                            Análisis financiero de ingresos, egresos y actividades
+                        </p>
+                    </div>
+                    <a 
+                        href="/reportes" 
+                        class="inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver a Reportes
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros de Fecha -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">🗓️ Filtros de Fecha</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Fecha Desde -->
+                    <div>
+                        <label for="fechaDesde" class="block text-sm font-medium text-gray-700 mb-2">
+                            Fecha Desde
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fechaDesde" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    <!-- Fecha Hasta -->
+                    <div>
+                        <label for="fechaHasta" class="block text-sm font-medium text-gray-700 mb-2">
+                            Fecha Hasta
+                        </label>
+                        <input 
+                            type="date" 
+                            id="fechaHasta" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
+                    
+                    <!-- Botones de Acción -->
+                    <div class="flex items-end gap-2">
+                        <button 
+                            id="aplicarFiltros" 
+                            class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            Aplicar Filtros
+                        </button>
+                        <button 
+                            id="limpiarFiltros" 
+                            class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filtros Rápidos -->
+                <div class="mt-4">
+                    <p class="text-sm font-medium text-gray-700 mb-2">Filtros Rápidos:</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="filtro-rapido px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors duration-200" data-periodo="7">
+                            Últimos 7 días
+                        </button>
+                        <button class="filtro-rapido px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors duration-200" data-periodo="30">
+                            Último mes
+                        </button>
+                        <button class="filtro-rapido px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors duration-200" data-periodo="90">
+                            Últimos 3 meses
+                        </button>
+                        <button class="filtro-rapido px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors duration-200" data-periodo="365">
+                            Último año
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicador de Filtros Activos -->
+            <div id="indicadorFiltros" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                    </svg>
+                    <span class="text-blue-800 font-medium">Filtros activos:</span>
+                    <span id="textoFiltros" class="text-blue-700 ml-2"></span>
+                </div>
+            </div>
+
+            <!-- Tarjetas de resumen -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Ingresos -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Ingresos</p>
+                            <p id="totalIngresos" class="text-2xl font-bold text-green-600">
+                                ${new Intl.NumberFormat('es-CO').format(reportDataInicial.totalIngresos)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Egresos -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-red-100 text-red-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Egresos</p>
+                            <p id="totalEgresos" class="text-2xl font-bold text-red-600">
+                                ${new Intl.NumberFormat('es-CO').format(reportDataInicial.totalEgresos)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Balance -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div id="balanceIcon" class={`p-3 rounded-full ${reportDataInicial.balance >= 0 ? 'bg-blue-100 text-blue-600' : 'bg-orange-100 text-orange-600'}`}>
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Balance</p>
+                            <p id="balance" class={`text-2xl font-bold ${reportDataInicial.balance >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+                                ${new Intl.NumberFormat('es-CO').format(reportDataInicial.balance)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actividades Completadas -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Actividades Completadas</p>
+                            <p id="actividadesCompletadas" class="text-2xl font-bold text-gray-900">{reportDataInicial.actividadesCompletadas}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Gráfico: Flujo de Caja Mensual -->
+                <div class="bg-white rounded-lg shadow-md p-6 lg:col-span-2">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Flujo de Caja Mensual</h3>
+                    <div class="relative h-80">
+                        <canvas id="flujoCajaChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Distribución de Ingresos por Categoría -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Ingresos por Categoría</h3>
+                    <div class="relative h-64">
+                        <canvas id="ingresosCategoriasChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Distribución de Egresos por Categoría -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Egresos por Categoría</h3>
+                    <div class="relative h-64">
+                        <canvas id="egresosCategoriasChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Estado de Actividades -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Estado de Actividades</h3>
+                    <div class="relative h-64">
+                        <canvas id="estadoActividadesChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Gráfico: Cumplimiento de Metas -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Cumplimiento de Metas por Actividad</h3>
+                    <div class="relative h-64">
+                        <canvas id="cumplimientoMetasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js Script con Filtros Dinámicos -->
+    <script is:inline define:vars={{ 
+        reportDataInicial, 
+        transaccionesData: transacciones, 
+        actividadesData: actividades 
+    }}>
+        // Variables globales
+        let chartInstances = {};
+        let datosOriginales = {
+            transacciones: transaccionesData,
+            actividades: actividadesData
+        };
+        let reportData = reportDataInicial;
+
+        // Función para procesar datos con filtros
+        function procesarDatosConFiltros(transaccionesFiltradas, actividadesFiltradas) {
+            const datos = {
+                totalIngresos: transaccionesFiltradas?.filter(t => t.tipo === 'ingreso')
+                    .reduce((sum, t) => sum + t.monto, 0) || 0,
+                totalEgresos: transaccionesFiltradas?.filter(t => t.tipo === 'egreso')
+                    .reduce((sum, t) => sum + t.monto, 0) || 0,
+                actividadesCompletadas: actividadesFiltradas?.filter(a => a.estado === 'completada').length || 0,
+                
+                flujoCajaMensual: (() => {
+                    const meses = {};
+                    const fechaActual = new Date();
+                    
+                    for (let i = 11; i >= 0; i--) {
+                        const fecha = new Date(fechaActual.getFullYear(), fechaActual.getMonth() - i, 1);
+                        const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                        meses[mesKey] = { ingresos: 0, egresos: 0 };
+                    }
+                    
+                    transaccionesFiltradas?.forEach(t => {
+                        const fecha = new Date(t.fecha);
+                        const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+                        
+                        if (meses[mesKey]) {
+                            if (t.tipo === 'ingreso') {
+                                meses[mesKey].ingresos += t.monto;
+                            } else {
+                                meses[mesKey].egresos += t.monto;
+                            }
+                        }
+                    });
+                    
+                    return Object.entries(meses).map(([mes, datos]) => ({
+                        mes,
+                        ingresos: datos.ingresos,
+                        egresos: datos.egresos
+                    }));
+                })(),
+                
+                ingresosPorCategoria: (() => {
+                    const ingresos = transaccionesFiltradas?.filter(t => t.tipo === 'ingreso') || [];
+                    const distribucion = {};
+                    
+                    ingresos.forEach(t => {
+                        const categoria = t.categoria?.nombre || 'Sin categoría';
+                        distribucion[categoria] = (distribucion[categoria] || 0) + t.monto;
+                    });
+                    
+                    return Object.entries(distribucion).map(([categoria, monto]) => ({
+                        categoria,
+                        monto
+                    }));
+                })(),
+                
+                egresosPorCategoria: (() => {
+                    const egresos = transaccionesFiltradas?.filter(t => t.tipo === 'egreso') || [];
+                    const distribucion = {};
+                    
+                    egresos.forEach(t => {
+                        const categoria = t.categoria?.nombre || 'Sin categoría';
+                        distribucion[categoria] = (distribucion[categoria] || 0) + t.monto;
+                    });
+                    
+                    return Object.entries(distribucion).map(([categoria, monto]) => ({
+                        categoria,
+                        monto
+                    }));
+                })(),
+                
+                estadoActividades: {
+                    planeadas: actividadesFiltradas?.filter(a => a.estado === 'planeada').length || 0,
+                    enCurso: actividadesFiltradas?.filter(a => a.estado === 'en_curso').length || 0,
+                    completadas: actividadesFiltradas?.filter(a => a.estado === 'completada').length || 0
+                },
+                
+                cumplimientoMetas: actividadesFiltradas?.map(actividad => {
+                    const ingresosActividad = transaccionesFiltradas?.filter(t => 
+                        t.tipo === 'ingreso' && t.actividad?.id === actividad.id
+                    ).reduce((sum, t) => sum + t.monto, 0) || 0;
+                    
+                    return {
+                        nombre: actividad.nombre,
+                        meta: actividad.meta,
+                        recaudado: ingresosActividad,
+                        porcentaje: actividad.meta > 0 ? (ingresosActividad / actividad.meta) * 100 : 0
+                    };
+                }).slice(0, 10) || []
+            };
+            
+            datos.balance = datos.totalIngresos - datos.totalEgresos;
+            return datos;
+        }
+
+        // Función para filtrar datos por fecha
+        function filtrarPorFecha(fechaDesde, fechaHasta) {
+            let transaccionesFiltradas = datosOriginales.transacciones;
+            let actividadesFiltradas = datosOriginales.actividades;
+            
+            if (fechaDesde || fechaHasta) {
+                transaccionesFiltradas = datosOriginales.transacciones?.filter(t => {
+                    const fechaTransaccion = new Date(t.fecha);
+                    let cumpleFiltro = true;
+                    
+                    if (fechaDesde) {
+                        cumpleFiltro = cumpleFiltro && fechaTransaccion >= new Date(fechaDesde);
+                    }
+                    
+                    if (fechaHasta) {
+                        cumpleFiltro = cumpleFiltro && fechaTransaccion <= new Date(fechaHasta);
+                    }
+                    
+                    return cumpleFiltro;
+                });
+                
+                actividadesFiltradas = datosOriginales.actividades?.filter(a => {
+                    const fechaInicio = new Date(a.fecha_inicio);
+                    let cumpleFiltro = true;
+                    
+                    if (fechaDesde) {
+                        cumpleFiltro = cumpleFiltro && fechaInicio >= new Date(fechaDesde);
+                    }
+                    
+                    if (fechaHasta) {
+                        cumpleFiltro = cumpleFiltro && fechaInicio <= new Date(fechaHasta);
+                    }
+                    
+                    return cumpleFiltro;
+                });
+            }
+            
+            return { transaccionesFiltradas, actividadesFiltradas };
+        }
+
+        // Función para actualizar las tarjetas de resumen
+        function actualizarTarjetas(datos) {
+            document.getElementById('totalIngresos').textContent = 
+                '$' + new Intl.NumberFormat('es-CO').format(datos.totalIngresos);
+            document.getElementById('totalEgresos').textContent = 
+                '$' + new Intl.NumberFormat('es-CO').format(datos.totalEgresos);
+            
+            const balanceElement = document.getElementById('balance');
+            const balanceIconElement = document.getElementById('balanceIcon');
+            
+            balanceElement.textContent = '$' + new Intl.NumberFormat('es-CO').format(datos.balance);
+            
+            // Actualizar colores del balance
+            if (datos.balance >= 0) {
+                balanceElement.className = 'text-2xl font-bold text-blue-600';
+                balanceIconElement.className = 'p-3 rounded-full bg-blue-100 text-blue-600';
+            } else {
+                balanceElement.className = 'text-2xl font-bold text-orange-600';
+                balanceIconElement.className = 'p-3 rounded-full bg-orange-100 text-orange-600';
+            }
+            
+            document.getElementById('actividadesCompletadas').textContent = datos.actividadesCompletadas;
+        }
+
+        // Cargar Chart.js desde CDN
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = function() {
+            // Configuración de colores
+            const colors = {
+                green: 'rgba(34, 197, 94, 0.8)',
+                red: 'rgba(239, 68, 68, 0.8)',
+                blue: 'rgba(59, 130, 246, 0.8)',
+                purple: 'rgba(147, 51, 234, 0.8)',
+                yellow: 'rgba(245, 158, 11, 0.8)',
+                pink: 'rgba(236, 72, 153, 0.8)',
+                indigo: 'rgba(99, 102, 241, 0.8)',
+                teal: 'rgba(20, 184, 166, 0.8)'
+            };
+
+            // Función para crear/actualizar gráficos
+            function crearActualizarGraficos(datos) {
+                // 1. Gráfico de Flujo de Caja Mensual
+                const flujoCajaCtx = document.getElementById('flujoCajaChart');
+                if (flujoCajaCtx) {
+                    if (chartInstances.flujoCaja) {
+                        chartInstances.flujoCaja.destroy();
+                    }
+                    
+                    chartInstances.flujoCaja = new Chart(flujoCajaCtx, {
+                        type: 'line',
+                        data: {
+                            labels: datos.flujoCajaMensual.map(item => {
+                                const [year, month] = item.mes.split('-');
+                                const fecha = new Date(year, month - 1);
+                                return fecha.toLocaleDateString('es-CO', { month: 'short', year: 'numeric' });
+                            }),
+                            datasets: [
+                                {
+                                    label: 'Ingresos',
+                                    data: datos.flujoCajaMensual.map(item => item.ingresos),
+                                    borderColor: colors.green,
+                                    backgroundColor: colors.green,
+                                    tension: 0.4,
+                                    fill: false
+                                },
+                                {
+                                    label: 'Egresos',
+                                    data: datos.flujoCajaMensual.map(item => item.egresos),
+                                    borderColor: colors.red,
+                                    backgroundColor: colors.red,
+                                    tension: 0.4,
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '$' + new Intl.NumberFormat('es-CO').format(value);
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': $' + 
+                                                new Intl.NumberFormat('es-CO').format(context.parsed.y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 2. Gráfico de Ingresos por Categoría
+                const ingresosCtx = document.getElementById('ingresosCategoriasChart');
+                if (ingresosCtx && datos.ingresosPorCategoria.length > 0) {
+                    if (chartInstances.ingresos) {
+                        chartInstances.ingresos.destroy();
+                    }
+                    
+                    const coloresIngresos = [colors.green, colors.blue, colors.purple, colors.yellow, colors.teal];
+                    chartInstances.ingresos = new Chart(ingresosCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: datos.ingresosPorCategoria.map(item => item.categoria),
+                            datasets: [{
+                                data: datos.ingresosPorCategoria.map(item => item.monto),
+                                backgroundColor: coloresIngresos,
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': $' + 
+                                                new Intl.NumberFormat('es-CO').format(context.parsed);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 3. Gráfico de Egresos por Categoría
+                const egresosCtx = document.getElementById('egresosCategoriasChart');
+                if (egresosCtx && datos.egresosPorCategoria.length > 0) {
+                    if (chartInstances.egresos) {
+                        chartInstances.egresos.destroy();
+                    }
+                    
+                    const coloresEgresos = [colors.red, colors.pink, colors.indigo, colors.yellow, colors.purple];
+                    chartInstances.egresos = new Chart(egresosCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: datos.egresosPorCategoria.map(item => item.categoria),
+                            datasets: [{
+                                data: datos.egresosPorCategoria.map(item => item.monto),
+                                backgroundColor: coloresEgresos,
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': $' + 
+                                                new Intl.NumberFormat('es-CO').format(context.parsed);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 4. Gráfico de Estado de Actividades
+                const estadoActividadesCtx = document.getElementById('estadoActividadesChart');
+                if (estadoActividadesCtx) {
+                    if (chartInstances.estadoActividades) {
+                        chartInstances.estadoActividades.destroy();
+                    }
+                    
+                    chartInstances.estadoActividades = new Chart(estadoActividadesCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Planeadas', 'En Curso', 'Completadas'],
+                            datasets: [{
+                                label: 'Actividades',
+                                data: [
+                                    datos.estadoActividades.planeadas,
+                                    datos.estadoActividades.enCurso,
+                                    datos.estadoActividades.completadas
+                                ],
+                                backgroundColor: [colors.yellow, colors.blue, colors.green],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    }
+                                }
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 5. Gráfico de Cumplimiento de Metas
+                const cumplimientoCtx = document.getElementById('cumplimientoMetasChart');
+                if (cumplimientoCtx && datos.cumplimientoMetas.length > 0) {
+                    if (chartInstances.cumplimiento) {
+                        chartInstances.cumplimiento.destroy();
+                    }
+                    
+                    chartInstances.cumplimiento = new Chart(cumplimientoCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: datos.cumplimientoMetas.map(item => 
+                                item.nombre.length > 15 ? item.nombre.substring(0, 15) + '...' : item.nombre
+                            ),
+                            datasets: [
+                                {
+                                    label: 'Meta',
+                                    data: datos.cumplimientoMetas.map(item => item.meta),
+                                    backgroundColor: colors.blue,
+                                    borderWidth: 1
+                                },
+                                {
+                                    label: 'Recaudado',
+                                    data: datos.cumplimientoMetas.map(item => item.recaudado),
+                                    backgroundColor: colors.green,
+                                    borderWidth: 1
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        callback: function(value) {
+                                            return '$' + new Intl.NumberFormat('es-CO').format(value);
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.dataset.label + ': $' + 
+                                                new Intl.NumberFormat('es-CO').format(context.parsed.y);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Crear gráficos iniciales
+            crearActualizarGraficos(reportData);
+
+            // Event listeners para filtros
+            document.getElementById('aplicarFiltros').addEventListener('click', function() {
+                const fechaDesde = document.getElementById('fechaDesde').value;
+                const fechaHasta = document.getElementById('fechaHasta').value;
+                
+                const { transaccionesFiltradas, actividadesFiltradas } = filtrarPorFecha(fechaDesde, fechaHasta);
+                const nuevosDatos = procesarDatosConFiltros(transaccionesFiltradas, actividadesFiltradas);
+                
+                actualizarTarjetas(nuevosDatos);
+                crearActualizarGraficos(nuevosDatos);
+                
+                // Mostrar indicador de filtros activos
+                if (fechaDesde || fechaHasta) {
+                    const indicador = document.getElementById('indicadorFiltros');
+                    const texto = document.getElementById('textoFiltros');
+                    
+                    let textoFiltro = '';
+                    if (fechaDesde && fechaHasta) {
+                        textoFiltro = `Desde ${fechaDesde} hasta ${fechaHasta}`;
+                    } else if (fechaDesde) {
+                        textoFiltro = `Desde ${fechaDesde}`;
+                    } else if (fechaHasta) {
+                        textoFiltro = `Hasta ${fechaHasta}`;
+                    }
+                    
+                    texto.textContent = textoFiltro;
+                    indicador.classList.remove('hidden');
+                } else {
+                    document.getElementById('indicadorFiltros').classList.add('hidden');
+                }
+            });
+
+            document.getElementById('limpiarFiltros').addEventListener('click', function() {
+                document.getElementById('fechaDesde').value = '';
+                document.getElementById('fechaHasta').value = '';
+                document.getElementById('indicadorFiltros').classList.add('hidden');
+                
+                actualizarTarjetas(reportDataInicial);
+                crearActualizarGraficos(reportDataInicial);
+            });
+
+            // Event listeners para filtros rápidos
+            document.querySelectorAll('.filtro-rapido').forEach(button => {
+                button.addEventListener('click', function() {
+                    const dias = parseInt(this.dataset.periodo);
+                    const fechaHasta = new Date();
+                    const fechaDesde = new Date();
+                    fechaDesde.setDate(fechaHasta.getDate() - dias);
+                    
+                    document.getElementById('fechaDesde').value = fechaDesde.toISOString().split('T')[0];
+                    document.getElementById('fechaHasta').value = fechaHasta.toISOString().split('T')[0];
+                    
+                    // Aplicar filtros automáticamente
+                    document.getElementById('aplicarFiltros').click();
+                });
+            });
+        };
+        document.head.appendChild(script);
+    </script>
+</LayoutProtected>

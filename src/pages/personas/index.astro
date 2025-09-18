@@ -390,7 +390,7 @@ const errorMessage = Astro.url.searchParams.get("error");
     // Datos de personas desde Astro
     window.personasData = personasConEscalasYMinisterios;
   
-    // ✅ INICIALIZAR SOLO UNA VEZ EN DOMContentLoaded
+    // ✅ INICIALIZAR CON DOMContentLoaded (ESTADO ORIGINAL)
     document.addEventListener('DOMContentLoaded', function() {
       console.log('DOM cargado, inicializando filtros y acciones...');
       console.log('Datos de personas:', window.personasData);
@@ -405,4 +405,3 @@ const errorMessage = Astro.url.searchParams.get("error");
 
   <Preloader />
 </LayoutProtected>
-

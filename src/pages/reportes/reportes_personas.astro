@@ -1,9 +1,9 @@
 ---
-// src/pages/reportes.astro
-import LayoutProtected from "../layouts/LayoutProtected.astro";
-import { supabase } from "../lib/supabase";
+// src/pages/reportes/personas.astro
+import LayoutProtected from "@layouts/LayoutProtected.astro";
+import { supabase } from "@lib/supabase";
 
-// Obtener datos para reportes
+// Obtener datos para reportes de personas
 const { data: personas, error: personasError } = await supabase
     .from("persona")
     .select(`
@@ -69,20 +69,33 @@ const reportData = {
     .map(([dept, count]) => ({ departamento: dept, cantidad: count }))
 };
 
-console.log("[Reportes] Datos procesados:", reportData);
+console.log("[Reportes Personas] Datos procesados:", reportData);
 ---
 
-<LayoutProtected title="Reportes y Estadísticas">
+<LayoutProtected title="Reportes de Personas">
     <div class="bg-gray-50 min-h-screen p-4 sm:p-8">
         <div class="max-w-7xl mx-auto">
             <!-- Header -->
             <div class="mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                    📊 Reportes y Estadísticas
-                </h1>
-                <p class="text-gray-600">
-                    Visualización de datos y métricas importantes de la iglesia
-                </p>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                            👥 Reportes de Personas
+                        </h1>
+                        <p class="text-gray-600">
+                            Estadísticas y métricas sobre los miembros de la iglesia
+                        </p>
+                    </div>
+                    <a 
+                        href="/reportes" 
+                        class="inline-flex items-center px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                        <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Volver a Reportes
+                    </a>
+                </div>
             </div>
 
             <!-- Tarjetas de resumen -->
@@ -189,19 +202,6 @@ console.log("[Reportes] Datos procesados:", reportData);
                         <canvas id="departamentosChart"></canvas>
                     </div>
                 </div>
-            </div>
-
-            <!-- Botón para volver -->
-            <div class="mt-8 text-center">
-                <a 
-                    href="/personas" 
-                    class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-medium rounded-lg hover:from-green-700 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-                >
-                    <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    Volver a Gestión de Personas
-                </a>
             </div>
         </div>
     </div>
@@ -363,7 +363,7 @@ console.log("[Reportes] Datos procesados:", reportData);
             const departamentosCtx = document.getElementById('departamentosChart');
             if (departamentosCtx && reportData.topDepartamentos) {
                 new Chart(departamentosCtx, {
-                    type: 'horizontalBar',
+                    type: 'bar',
                     data: {
                         labels: reportData.topDepartamentos.map(item => item.departamento),
                         datasets: [{
@@ -398,4 +398,3 @@ console.log("[Reportes] Datos procesados:", reportData);
         document.head.appendChild(script);
     </script>
 </LayoutProtected>
-

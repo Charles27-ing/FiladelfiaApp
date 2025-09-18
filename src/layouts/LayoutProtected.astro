@@ -38,14 +38,14 @@ const userEmail = session.user?.email || 'Invitado';
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
 	</head>
 	<body class="h-full">
-		<!-- ====================================================== -->
+				<!-- ====================================================== -->
 		<!-- LAYOUT AUTENTICADO CON SIDEBAR -->
 		<!-- ====================================================== -->
 		<div class="flex h-full">
 			<!-- ====================================================== -->
 			<!-- SIDEBAR (MENÚ LATERAL IZQUIERDO) -->
 			<!-- ====================================================== -->
-			<aside class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+						<aside class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
 				<!-- Contenedor del sidebar -->
 				<div class="flex flex-col flex-grow bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
 					<!-- Logo y título -->
@@ -93,7 +93,7 @@ const userEmail = session.user?.email || 'Invitado';
 								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}>
 							<svg class={`mr-3 h-5 w-5 ${currentPath === '/dashboard' ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h4"/>
 							</svg>
 							Dashboard
 						</a>
@@ -144,7 +144,7 @@ const userEmail = session.user?.email || 'Invitado';
 								</a>
 								<a href="/contabilidad/transacciones" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${currentPath === '/contabilidad/transacciones' ? 'bg-green-100 text-green-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}>
 									<svg class={`mr-3 h-4 w-4 ${currentPath === '/contabilidad/transacciones' ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v12a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v12"/>
 									</svg>
 									Listado de Transacciones
 								</a>
@@ -155,18 +155,18 @@ const userEmail = session.user?.email || 'Invitado';
 									Resumen de Actividades
 								</a>
 							</div>
-						</div>
+						</div>		
 
 						<!-- Reportes -->
-						<a href="/reportes" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-							currentPath.startsWith('/reportes') 
+						<a href="/reportes/reportes_index" class={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+							currentPath.startsWith('/reportes/reportes_index') 
 								? 'bg-green-100 text-green-700 border-r-2 border-green-600' 
 								: 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
 						}`}>
-							<svg class={`mr-3 h-5 w-5 ${currentPath.startsWith('/reportes') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+							<svg class={`mr-3 h-5 w-5 ${currentPath.startsWith('/reportes/reportes_index') ? 'text-green-500' : 'text-gray-400 group-hover:text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6a2 2 0 00-2-2H9m6 0a2 2 0 002 2v6a2 2 0 002 2v-6a2 2 0 002-2m0 0a2 2 0 002 2v6a2 2 0 002 2v-6a2 2 0 002-2m-6 0h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2v-6a2 2 0 00-2-2m0-2h2a2 2 0 002 2v6a2 2 0 002 2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v6z"/>
 							</svg>
-							Reportes
+							Dashboard Reportes
 						</a>
 					</nav>
 
@@ -187,7 +187,7 @@ const userEmail = session.user?.email || 'Invitado';
 			<!-- ====================================================== -->
 			<div class="lg:pl-64 flex flex-col flex-1">
 				<!-- Header superior (móvil y desktop) -->
-				<header class="bg-white shadow-sm border-b border-gray-200">
+								<header class="bg-white shadow-sm border-b border-gray-200">
 					<div class="px-4 sm:px-6 lg:px-8">
 						<div class="flex justify-between h-16">
 							<!-- Botón de menú móvil -->
@@ -228,7 +228,7 @@ const userEmail = session.user?.email || 'Invitado';
 				</header>
 
 				<!-- Área de contenido principal -->
-				<main class="flex-1 overflow-y-auto">
+								<main class="flex-1 overflow-y-auto">
 					<div class="px-4 sm:px-6 lg:px-8 py-6">
 						<slot />
 					</div>
@@ -285,8 +285,8 @@ const userEmail = session.user?.email || 'Invitado';
 							<a href="/contabilidad/actividades" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
 								Resumen de Actividades
 							</a>
-							<a href="/reportes" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
-								Reportes
+							<a href="/reportes/reportes_index" class="group flex items-center px-3 py-2 text-base font-medium text-gray-600 rounded-md hover:bg-gray-50 hover:text-gray-900">
+								Dashboard Reportes
 							</a>
 						</nav>
 					</div>
@@ -307,71 +307,70 @@ const userEmail = session.user?.email || 'Invitado';
 					</div>
 				</div>
 			</div>
-		</div>
 
-		<!-- Scripts para funcionalidad del menú móvil -->
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				const mobileMenuButton = document.getElementById('mobile-menu-button');
-				const mobileMenu = document.getElementById('mobile-menu');
-				const mobileMenuClose = document.getElementById('mobile-menu-close');
-				const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+			<!-- Scripts para funcionalidad del menú móvil -->
+			<script>
+				document.addEventListener('DOMContentLoaded', function() {
+					const mobileMenuButton = document.getElementById('mobile-menu-button');
+					const mobileMenu = document.getElementById('mobile-menu');
+					const mobileMenuClose = document.getElementById('mobile-menu-close');
+					const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
 
-				// Abrir menú móvil
-				if (mobileMenuButton) {
-					mobileMenuButton.addEventListener('click', function() {
-						mobileMenu?.classList.remove('hidden');
+					// Abrir menú móvil
+					if (mobileMenuButton) {
+						mobileMenuButton.addEventListener('click', function() {
+							mobileMenu?.classList.remove('hidden');
+						});
+					}
+
+					// Cerrar menú móvil
+					function closeMobileMenu() {
+						mobileMenu?.classList.add('hidden');
+					}
+
+					if (mobileMenuClose) {
+						mobileMenuClose.addEventListener('click', closeMobileMenu);
+					}
+
+					if (mobileMenuOverlay) {
+						mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+					}
+
+					// Cerrar menú con tecla Escape
+					document.addEventListener('keydown', function(e) {
+						if (e.key === 'Escape') {
+							closeMobileMenu();
+						}
 					});
-				}
 
-				// Cerrar menú móvil
-				function closeMobileMenu() {
-					mobileMenu?.classList.add('hidden');
-				}
-
-				if (mobileMenuClose) {
-					mobileMenuClose.addEventListener('click', closeMobileMenu);
-				}
-
-				if (mobileMenuOverlay) {
-					mobileMenuOverlay.addEventListener('click', closeMobileMenu);
-				}
-
-				// Cerrar menú con tecla Escape
-				document.addEventListener('keydown', function(e) {
-					if (e.key === 'Escape') {
-						closeMobileMenu();
+					// Menú desplegable de Contabilidad
+					const contabilidadMenuButton = document.getElementById('contabilidad-menu-button');
+					const contabilidadSubmenu = document.getElementById('contabilidad-submenu');
+					
+					if (contabilidadMenuButton && contabilidadSubmenu) {
+						contabilidadMenuButton.addEventListener('click', function() {
+							const expanded = this.getAttribute('aria-expanded') === 'true';
+							this.setAttribute('aria-expanded', (!expanded).toString());
+							contabilidadSubmenu.classList.toggle('hidden', expanded);
+							
+							// Rotar el ícono de la flecha
+													const icon = this.querySelector('svg:last-child') as HTMLElement;
+							if (icon) {
+								icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
+							}
+						});
+						
+						// Mantener abierto el submenú si la ruta actual está dentro de contabilidad
+						if (window.location.pathname.startsWith('/contabilidad')) {
+							contabilidadMenuButton.setAttribute('aria-expanded', 'true');
+							contabilidadSubmenu.classList.remove('hidden');
+													const icon = contabilidadMenuButton.querySelector('svg:last-child') as HTMLElement;
+							if (icon) {
+								icon.style.transform = 'rotate(180deg)';
+							}
+						}
 					}
 				});
-
-				// Menú desplegable de Contabilidad
-				const contabilidadMenuButton = document.getElementById('contabilidad-menu-button');
-				const contabilidadSubmenu = document.getElementById('contabilidad-submenu');
-				
-				if (contabilidadMenuButton && contabilidadSubmenu) {
-					contabilidadMenuButton.addEventListener('click', function() {
-						const expanded = this.getAttribute('aria-expanded') === 'true';
-						this.setAttribute('aria-expanded', (!expanded).toString());
-						contabilidadSubmenu.classList.toggle('hidden', expanded);
-						
-						// Rotar el ícono de la flecha
-						const icon = this.querySelector('svg:last-child');
-						if (icon) {
-							icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
-						}
-					});
-					
-					// Mantener abierto el submenú si la ruta actual está dentro de contabilidad
-					if (window.location.pathname.startsWith('/contabilidad')) {
-						contabilidadMenuButton.setAttribute('aria-expanded', 'true');
-						contabilidadSubmenu.classList.remove('hidden');
-						const icon = contabilidadMenuButton.querySelector('svg:last-child');
-						if (icon) {
-							icon.style.transform = 'rotate(180deg)';
-						}
-					}
-				}
-			});
-		</script>
-	</body>
+			</script>
+  </body>
 </html>
