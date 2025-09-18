@@ -275,34 +275,6 @@ if (error) {
                 <span id="success-text" class="ml-2"></span>
             </div>
 
-            <!-- Preloader que se muestra durante el envío del formulario -->
-            <div id="preloader" class="fixed inset-0 bg-white bg-opacity-90 flex flex-col items-center justify-center z-50 hidden">
-                <div class="flex flex-col items-center">
-                    <!-- Contenedor del loader -->
-                    <div id="loader-container" class="relative w-16 h-16 mb-4">
-                        <!-- Spinner que se muestra durante la carga -->
-                        <div id="spinner" class="w-full h-full border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        
-                        <!-- Checkmark que se muestra al completar -->
-                        <div id="success-check" class="hidden absolute inset-0 flex items-center justify-center">
-                            <svg class="w-10 h-10 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    
-                    <!-- Texto del preloader -->
-                    <p id="preloader-text" class="text-lg font-medium text-gray-700">Registrando persona...</p>
-                    
-                    <!-- Botón para continuar (se muestra después del éxito) -->
-                    <button id="continue-btn" class="mt-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 hidden">
-                        Continuar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <Preloader />
 
     <script define:vars={{ departamentos }}>

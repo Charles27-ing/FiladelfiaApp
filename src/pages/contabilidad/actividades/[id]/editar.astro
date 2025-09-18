@@ -284,7 +284,7 @@ const successMessage = url.searchParams.get('success');
         }
 
         // Mostrar preloader
-        window.showPreloader();
+        window.showPreloader('Actualizando actividad...');
 
         try {
           const formData = new FormData(form);
@@ -326,7 +326,7 @@ const successMessage = url.searchParams.get('success');
           }
 
           // Mostrar preloader
-          window.showPreloader();
+          window.showPreloader('Eliminando actividad...');
 
           try {
             const response = await fetch(`/api/contabilidad/actividades/${id}`, {

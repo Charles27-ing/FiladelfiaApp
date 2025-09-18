@@ -362,17 +362,12 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
 
   async function anularTransaccion(id: string, numero: string, notas: string) {
     try {
-      // Mostrar indicador de carga
-      const anularBtn = document.querySelector(`[data-id="${id}"]`) as HTMLButtonElement;
-      if (anularBtn) {
-        anularBtn.disabled = true;
-        anularBtn.innerHTML = `
-          <svg class="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        `;
-      }
+      // Mostrar preloader global
+      (window as any).showPreloader?.(`Anulando transacción #${numero}...`);
+
+      // Deshabilitar botón para evitar doble clic
+      const anularBtn = document.querySelector(`[data-id="${id}"]`) as HTMLButtonElement | null;
+      if (anularBtn) anularBtn.disabled = true;
 
           const response = await fetch(`/api/contabilidad/transacciones/${id}`, {
             method: 'PUT',
@@ -385,25 +380,21 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
         throw new Error(errorData.error || 'Error al anular la transacción');
       }
       
-      // Mostrar mensaje de éxito
-      showSuccessMessage('Transacción anulada exitosamente');
+      // Mostrar éxito con preloader y recargar
+      (window as any).showPreloaderSuccess?.('¡Transacción anulada exitosamente!');
       setTimeout(() => {
-          window.location.reload(); // Recargar para actualizar la tabla
-      }, 2000);
+        window.location.reload();
+      }, 1200);
       
         } catch (error) {
       console.error('Error al anular transacción:', error);
+      (window as any).hidePreloader?.();
       alert('Error al anular la transacción: ' + (error instanceof Error ? error.message : 'Error desconocido'));
       
       // Restaurar botón
       const anularBtn = document.querySelector(`[data-id="${id}"]`) as HTMLButtonElement;
       if (anularBtn) {
         anularBtn.disabled = false;
-        anularBtn.innerHTML = `
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        `;
       }
     }
   }

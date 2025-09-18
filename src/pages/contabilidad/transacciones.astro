@@ -1,5 +1,6 @@
 ---
 import LayoutProtected from '@layouts/LayoutProtected.astro';
+import Preloader from '@components/Preloader.astro';
 
 
 // Definición de tipos
@@ -315,6 +316,7 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
       animation: spin 1s linear infinite;
     }
   </style>
+  <Preloader />
 </LayoutProtected>
 
 
