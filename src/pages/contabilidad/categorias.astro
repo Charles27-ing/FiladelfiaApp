@@ -1,0 +1,140 @@
+---
+import LayoutProtected from '@layouts/LayoutProtected.astro';
+import Preloader from '@components/Preloader.astro';
+
+interface Categoria {
+  id: string;
+  nombre: string;
+  tipo: 'ingreso' | 'egreso';
+  descripcion: string | null;
+}
+
+const baseUrl = Astro.url.origin;
+let categorias: Categoria[] = [];
+let error: string | null = null;
+
+try {
+  const res = await fetch(`${baseUrl}/api/contabilidad/categorias`);
+  if (res.ok) {
+    categorias = await res.json();
+  } else {
+    error = 'No se pudieron cargar las categorías';
+  }
+} catch (err) {
+  error = 'Error al cargar las categorías';
+}
+
+const url = new URL(Astro.request.url);
+const successMessage = url.searchParams.get('success');
+const errorMessage = url.searchParams.get('error');
+---
+
+<LayoutProtected title="Gestión de Categorías">
+  <div class="max-w-6xl mx-auto p-4">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Categorías</h1>
+      <a href="/contabilidad/categorias/nueva" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+        Nueva Categoría
+      </a>
+    </div>
+
+    {successMessage && (
+      <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md">
+        {successMessage}
+      </div>
+    )}
+    {errorMessage && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+        {errorMessage}
+      </div>
+    )}
+    {error && (
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md">
+        {error}
+      </div>
+    )}
+
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+      {categorias.length > 0 ? (
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+              <th scope="col" class="relative px-6 py-3">
+                <span class="sr-only">Acciones</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {categorias.map((categoria) => (
+              <tr id={`categoria-${categoria.id}`}>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{categoria.nombre}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${categoria.tipo === 'ingreso' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {categoria.tipo}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {categoria.descripcion || 'N/A'}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <a href={`/contabilidad/categorias/${categoria.id}/editar`} class="text-indigo-600 hover:text-indigo-900">Editar</a>
+                  <button class="text-red-600 hover:text-red-900 ml-4" onclick={`confirmarEliminar('${categoria.id}')`}>Eliminar</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div class="p-10 text-center text-gray-500">
+          No hay categorías registradas.
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    async function confirmarEliminar(id: string) {
+      if (!confirm('¿Estás seguro de que quieres eliminar esta categoría?')) return;
+
+      // @ts-ignore
+      window.showPreloader('Eliminando categoría...');
+
+      try {
+        const response = await fetch(`/api/contabilidad/categorias/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          // @ts-ignore
+          window.showPreloaderSuccess(result.message || 'Categoría eliminada con éxito');
+          setTimeout(() => {
+            const row = document.getElementById(`categoria-${id}`);
+            if (row) {
+              row.remove();
+            }
+            // @ts-ignore
+            window.hidePreloader();
+          }, 1500);
+        } else {
+          const error = await response.json();
+          // @ts-ignore
+          window.hidePreloader();
+          alert(error.error || 'No se pudo eliminar la categoría');
+        }
+      } catch (error) {
+        // @ts-ignore
+        window.hidePreloader();
+        alert('Error de conexión al intentar eliminar la categoría.');
+        console.error('Error al eliminar categoría:', error);
+      }
+    }
+  </script>
+
+  <Preloader />
+</LayoutProtected>

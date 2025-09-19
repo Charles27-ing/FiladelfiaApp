@@ -26,7 +26,7 @@ export function initializePersonasFilters(initialPersonas) {
 
   let currentPersonas = initialPersonas;
   let currentPage = 1;
-  const itemsPerPage = 5; // Número de elementos por página
+  const itemsPerPage = 10; // Número de elementos por página
 
   // Actualizar conteos iniciales
   if (totalCountSpan) totalCountSpan.textContent = initialPersonas.length.toString();
