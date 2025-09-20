@@ -190,6 +190,17 @@ export const DELETE: APIRoute = async ({ params, request, redirect }) => {
       return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
     }
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      console.error('Invalid UUID format for activity deletion:', id);
+      const errorMsg = 'ID de actividad tiene un formato inválido';
+      if (isAjax) {
+        return new Response(JSON.stringify({ error: errorMsg }), { status: 400 });
+      }
+      return redirect('/contabilidad/actividades?error=' + encodeURIComponent(errorMsg));
+    }
+
     // Verificar que la actividad pertenece al usuario
     const { data: actividad, error: actividadError } = await supabase
       .from('actividades')
@@ -284,6 +295,13 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
       const id = params.id;
       if (!id) {
         return redirect('/contabilidad/actividades?error=' + encodeURIComponent('ID de actividad requerido'));
+      }
+
+      // Validate UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        console.error('Invalid UUID format for activity deletion (POST override):', id);
+        return redirect('/contabilidad/actividades?error=' + encodeURIComponent('ID de actividad tiene un formato inválido'));
       }
 
       const nombre = formData.get('nombre')?.toString();

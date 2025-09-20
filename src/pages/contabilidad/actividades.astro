@@ -77,7 +77,7 @@ const errorMessage = url.searchParams.get('error');
                     <a href={`/contabilidad/actividades/${actividad.id}/seguimiento`} class="text-blue-600 hover:text-blue-800 text-sm">Seguimiento</a>
                     <a href={`/contabilidad/actividades/${actividad.id}/editar`} class="text-gray-600 hover:text-gray-800 text-sm">Editar</a>
                   </div>
-                  <button class="text-red-600 hover:text-red-800 text-sm" onclick={`confirmarEliminar('${actividad.id}')`}>Eliminar</button>
+                  <button class="text-red-600 hover:text-red-800 text-sm eliminar-actividad" data-actividad-id={`${actividad.id}`}>Eliminar</button>
                 </div>
               </div>
             ))}
@@ -88,48 +88,229 @@ const errorMessage = url.searchParams.get('error');
           </div>
         )}
       </div>
-    
+
+      <!-- ====================================================== -->
+      <!-- MODAL DE CONFIRMACIÓN DE ELIMINACIÓN -->
+      <!-- ====================================================== -->
+      <div id="delete-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+          <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100" id="modal-icon">
+              <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-2" id="modal-title">Confirmar eliminación</h3>
+            <div class="mt-2 px-7 py-3">
+              <p class="text-sm text-gray-500" id="modal-message">
+                ¿Estás seguro de que deseas eliminar esta actividad? Esto eliminará todas las transacciones asociadas.
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
+            <div class="items-center px-4 py-3" id="modal-buttons">
+              <button
+                id="confirm-delete"
+                class="px-4 py-2 bg-red-500 text-white text-base font-medium rounded-md w-24 mr-2 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300"
+              >
+                Eliminar
+              </button>
+              <button
+                id="cancel-delete"
+                class="px-4 py-2 bg-gray-500 text-white text-base font-medium rounded-md w-24 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              >
+                Cancelar
+              </button>
+            </div>
+            <div class="items-center px-4 py-3 hidden" id="modal-error-buttons">
+              <button
+                id="close-error-modal"
+                class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-24 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <script>
-        async function confirmarEliminar(id: string) {
-          if (!confirm('¿Estás seguro de que quieres eliminar esta actividad? Esto eliminará todas las transacciones asociadas.')) return;
+        let actividadIdToDelete: string | null = null;
+
+        function showDeleteModal(id: string) {
+          console.log('Showing delete modal for activity ID:', id);
+          actividadIdToDelete = id;
+
+          // Reset modal to confirmation state
+          resetModalToConfirmation();
+
+          const modal = document.getElementById('delete-modal');
+          if (modal) {
+            modal.classList.remove('hidden');
+          }
+        }
+
+        function hideDeleteModal() {
+          actividadIdToDelete = null;
+          const modal = document.getElementById('delete-modal');
+          if (modal) {
+            modal.classList.add('hidden');
+          }
+        }
+
+        function resetModalToConfirmation() {
+          const modalIcon = document.getElementById('modal-icon');
+          const modalTitle = document.getElementById('modal-title');
+          const modalMessage = document.getElementById('modal-message');
+          const modalButtons = document.getElementById('modal-buttons');
+          const modalErrorButtons = document.getElementById('modal-error-buttons');
+
+          if (modalIcon) modalIcon.innerHTML = `
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          `;
+
+          if (modalTitle) modalTitle.textContent = 'Confirmar eliminación';
+          if (modalMessage) modalMessage.textContent = '¿Estás seguro de que deseas eliminar esta actividad? Esto eliminará todas las transacciones asociadas. Esta acción no se puede deshacer.';
+          if (modalButtons) modalButtons.classList.remove('hidden');
+          if (modalErrorButtons) modalErrorButtons.classList.add('hidden');
+        }
+
+        function showErrorInModal(errorMessage: string) {
+          const modalIcon = document.getElementById('modal-icon');
+          const modalTitle = document.getElementById('modal-title');
+          const modalMessage = document.getElementById('modal-message');
+          const modalButtons = document.getElementById('modal-buttons');
+          const modalErrorButtons = document.getElementById('modal-error-buttons');
+
+          if (modalIcon) modalIcon.innerHTML = `
+            <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+            </svg>
+          `;
+
+          if (modalTitle) modalTitle.textContent = 'No se puede eliminar';
+          if (modalMessage) modalMessage.textContent = errorMessage;
+          if (modalButtons) modalButtons.classList.add('hidden');
+          if (modalErrorButtons) modalErrorButtons.classList.remove('hidden');
+        }
+
+        async function confirmarEliminar() {
+          if (!actividadIdToDelete) {
+            console.error('No activity ID to delete');
+            return;
+          }
+
+          console.log('Confirming deletion for activity ID:', actividadIdToDelete);
+
+          const idToDelete = actividadIdToDelete; // Store the ID before hiding modal
+          hideDeleteModal();
 
           // Mostrar preloader
-          window.showPreloader();
+          // @ts-ignore
+          window.showPreloader('Eliminando actividad...');
 
           try {
-            const response = await fetch(`/api/contabilidad/actividades/${id}`, {
+            console.log('Making DELETE request to:', `/api/contabilidad/actividades/${idToDelete}`);
+            const response = await fetch(`/api/contabilidad/actividades/${idToDelete}`, {
               method: 'DELETE',
               headers: {
                 'X-Requested-With': 'XMLHttpRequest'
               }
             });
 
+            console.log('Response status:', response.status);
             const data = await response.json();
+            console.log('Response data:', data);
 
             if (response.ok && data.success) {
               // Éxito: mostrar checkmark
+              // @ts-ignore
               window.showPreloaderSuccess(data.message);
-              // Remover el elemento de la actividad después de 1 segundo
+              // Remover el elemento de la actividad después de 2 segundos
               setTimeout(() => {
-                const actividadCard = document.querySelector(`[onclick*="confirmarEliminar('${id}')"]`);
+                const actividadCard = document.querySelector(`[data-actividad-id="${idToDelete}"]`);
                 if (actividadCard) {
                   const card = actividadCard.closest('.bg-white.rounded-xl');
                   if (card) {
                     card.remove();
                   }
                 }
-              }, 1000);
+                // @ts-ignore
+                window.hidePreloader();
+              }, 2000);
             } else {
-              // Error: mostrar mensaje
+              // Error: mostrar mensaje en modal
+              // @ts-ignore
               window.hidePreloader();
-              alert(data.error || 'Error desconocido');
+              showErrorInModal(data.error || 'Error desconocido');
+              const modal = document.getElementById('delete-modal');
+              if (modal) {
+                modal.classList.remove('hidden');
+              }
             }
           } catch (error) {
-            console.error('Error al eliminar:', error);
+            console.error('Error al eliminar actividad:', error);
+            // @ts-ignore
             window.hidePreloader();
-            alert('Error de conexión. Inténtalo de nuevo.');
+
+            // Show connection error in modal
+            showErrorInModal('Error de conexión. Inténtalo de nuevo.');
+            const modal = document.getElementById('delete-modal');
+            if (modal) {
+              modal.classList.remove('hidden');
+            }
           }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+          const eliminarBotones = document.querySelectorAll('.eliminar-actividad');
+          eliminarBotones.forEach((boton) => {
+            boton.addEventListener('click', () => {
+              const id = boton.getAttribute('data-actividad-id');
+              console.log('Delete button clicked, activity ID from attribute:', id);
+              if (id) {
+                showDeleteModal(id);
+              } else {
+                console.error('No data-actividad-id attribute found on button');
+              }
+            });
+          });
+
+          // Modal buttons
+          const confirmDeleteBtn = document.getElementById('confirm-delete');
+          const cancelDeleteBtn = document.getElementById('cancel-delete');
+          const closeErrorBtn = document.getElementById('close-error-modal');
+
+          if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener('click', confirmarEliminar);
+          }
+
+          if (cancelDeleteBtn) {
+            cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+          }
+
+          if (closeErrorBtn) {
+            closeErrorBtn.addEventListener('click', hideDeleteModal);
+          }
+
+          // Close modal when clicking outside
+          const modal = document.getElementById('delete-modal');
+          if (modal) {
+            modal.addEventListener('click', (e) => {
+              if (e.target === modal) {
+                hideDeleteModal();
+              }
+            });
+          }
+
+          // Close modal with Escape key
+          document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              hideDeleteModal();
+            }
+          });
+        });
       </script>
 
       <script>

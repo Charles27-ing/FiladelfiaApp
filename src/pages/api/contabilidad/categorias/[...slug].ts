@@ -95,13 +95,52 @@ export const DELETE: APIRoute = async ({ params }) => {
     return new Response(JSON.stringify({ error: 'ID de categoría es requerido' }), { status: 400 });
   }
 
+  // Validate UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(categoriaId)) {
+    console.error('Invalid UUID format for category deletion:', categoriaId);
+    return new Response(JSON.stringify({ error: 'ID de categoría tiene un formato inválido' }), { status: 400 });
+  }
+
   try {
-    const { error, count } = await supabase.from('categorias').delete({ count: 'exact' }).eq('id', categoriaId);
+    // Check if category exists
+    const { data: categoria, error: categoriaError } = await supabase
+      .from('categorias')
+      .select('id, nombre')
+      .eq('id', categoriaId)
+      .single();
 
-    if (error) throw error;
+    if (categoriaError || !categoria) {
+      return new Response(JSON.stringify({ error: 'Categoría no encontrada' }), { status: 404 });
+    }
 
-    if (count === 0) {
-      return new Response(JSON.stringify({ error: 'Categoría no encontrada o ya fue eliminada' }), { status: 404 });
+    // Check if category is being used in any transactions
+    const { data: transacciones, error: transaccionesError } = await supabase
+      .from('transacciones')
+      .select('id')
+      .eq('categoria_id', categoriaId)
+      .limit(1);
+
+    if (transaccionesError) {
+      console.error('Error checking transactions:', transaccionesError);
+      return new Response(JSON.stringify({ error: 'Error al verificar transacciones asociadas' }), { status: 500 });
+    }
+
+    if (transacciones && transacciones.length > 0) {
+      return new Response(JSON.stringify({
+        error: 'No se puede eliminar la categoría porque tiene transacciones asociadas'
+      }), { status: 400 });
+    }
+
+    // Delete the category
+    const { error: deleteError } = await supabase
+      .from('categorias')
+      .delete()
+      .eq('id', categoriaId);
+
+    if (deleteError) {
+      console.error('Error deleting category:', deleteError);
+      return new Response(JSON.stringify({ error: 'Error al eliminar la categoría' }), { status: 500 });
     }
 
     return new Response(JSON.stringify({ message: 'Categoría eliminada con éxito' }), { status: 200 });
