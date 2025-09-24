@@ -114,6 +114,7 @@ progreso = meta > 0 ? Math.min((totalRecaudado / meta) * 100, 100) : 0;
         <table class="min-w-full bg-white border border-gray-200">
           <thead class="bg-gray-50">
             <tr>
+              <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número de Transacción</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Monto</th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
@@ -124,6 +125,7 @@ progreso = meta > 0 ? Math.min((totalRecaudado / meta) * 100, 100) : 0;
           <tbody class="divide-y divide-gray-200">
             {transacciones.length > 0 ? transacciones.map((t: Transaccion) => (
               <tr>
+                <td class="px-3 py-4">{t.numero_transaccion || t.id}</td>
                 <td class="px-6 py-4">{new Date(t.fecha).toLocaleDateString('es-CO')}</td>
                 <td class="px-6 py-4">{t.monto.toLocaleString()} COP</td>
                 <td class="px-6 py-4">{t.tipo}</td>
