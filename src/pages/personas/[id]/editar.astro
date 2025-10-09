@@ -98,7 +98,7 @@ if (error || !personaData) {
   return Astro.redirect('/personas?error=' + encodeURIComponent('Persona no encontrada'));
 }
 
-const persona = personaData as Persona;
+const persona = personaData as unknown as Persona;
 
 // Obtener todas las sedes para el select
 const { data: sedesData } = await supabase
@@ -811,10 +811,38 @@ const errorMessage = Astro.url.searchParams.get("error");
 
     // AJAX form submission
     const form = document.getElementById('persona-form');
+    // Normalización UX: Title Case en nombres y apellidos
+    const toTitleCaseEs = (input) => {
+      if (!input) return input;
+      const lowerWords = new Set(['de','del','la','las','el','los','y','o','u','a','e','da','do','das','dos','san','santa']);
+      return input
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .split(' ')
+        .map((w, i) => {
+          if (i > 0 && lowerWords.has(w)) return w;
+          return w.charAt(0).toLocaleUpperCase('es-ES') + w.slice(1);
+        })
+        .join(' ');
+    };
+    ['nombres','primer_apellido','segundo_apellido'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('blur', () => {
+        el.value = toTitleCaseEs(el.value);
+      });
+    });
     form.addEventListener('submit', async function(e) {
       e.preventDefault();
 
-      window.showPreloader('actualizando');
+      // Normalizar antes de enviar
+      ['nombres','primer_apellido','segundo_apellido'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = toTitleCaseEs(el.value);
+      });
+
+      window.showPreloader('Actualizando...');
 
       try {
         const formData = new FormData(form);

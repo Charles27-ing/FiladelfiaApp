@@ -55,6 +55,13 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
   const paginationTotal = document.getElementById('pagination-total') as HTMLElement;
   const exportExcelButton = document.getElementById('export-excel-all') as HTMLButtonElement | null;
   const exportPdfButton = document.getElementById('export-pdf-all') as HTMLButtonElement | null;
+  const indicadorFiltros = document.getElementById('indicadorFiltros') as HTMLElement;
+  const textoFiltros = document.getElementById('textoFiltros') as HTMLElement;
+  const totalIngresosEl = document.getElementById('totalIngresos') as HTMLElement;
+  const totalEgresosEl = document.getElementById('totalEgresos') as HTMLElement;
+  const balanceEl = document.getElementById('balance') as HTMLElement;
+  const balanceIconEl = document.getElementById('balanceIcon') as HTMLElement;
+  const totalTransaccionesEl = document.getElementById('totalTransacciones') as HTMLElement;
 
   // Validar elementos del DOM
   if (!transaccionesContainer || !transaccionesContainerMobile) {
@@ -424,6 +431,42 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
     });
 
     currentPage = 1;
+
+    const resumen = calculateResumen(currentTransacciones);
+    totalIngresosEl.textContent = formatCurrency(resumen.ingresos);
+    totalEgresosEl.textContent = formatCurrency(resumen.egresos);
+    balanceEl.textContent = formatCurrency(resumen.neto);
+    totalTransaccionesEl.textContent = currentTransacciones.length.toString();
+
+    // Update balance color
+    if (resumen.neto >= 0) {
+      balanceEl.className = 'text-2xl font-bold text-blue-600';
+      balanceIconEl.className = 'p-3 rounded-full bg-blue-100 text-blue-600';
+    } else {
+      balanceEl.className = 'text-2xl font-bold text-orange-600';
+      balanceIconEl.className = 'p-3 rounded-full bg-orange-100 text-orange-600';
+    }
+
+    // Show indicator if filters active
+    if (fechaInicio || fechaFin || actividadId) {
+      let textoFiltro = '';
+      if (fechaInicio && fechaFin) {
+        textoFiltro = `Desde ${fechaInicio} hasta ${fechaFin}`;
+      } else if (fechaInicio) {
+        textoFiltro = `Desde ${fechaInicio}`;
+      } else if (fechaFin) {
+        textoFiltro = `Hasta ${fechaFin}`;
+      }
+      if (actividadId) {
+        const actividadNombre = initialActividades.find(a => a.id === actividadId)?.nombre || 'N/A';
+        textoFiltro += (textoFiltro ? ', ' : '') + `Actividad: ${actividadNombre}`;
+      }
+      textoFiltros.textContent = textoFiltro;
+      indicadorFiltros.classList.remove('hidden');
+    } else {
+      indicadorFiltros.classList.add('hidden');
+    }
+
     renderTransacciones();
   }
 

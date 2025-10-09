@@ -1,6 +1,7 @@
 ---
 // src/pages/login.astro - VERSIÓN REDISEÑADA
 import { supabase } from '../lib/supabase';
+import Preloader from "@components/Preloader.astro";
 
 const errorMessage = Astro.url.searchParams.get('error');
 ---
@@ -172,7 +173,24 @@ const errorMessage = Astro.url.searchParams.get('error');
     </div>
 
     <!-- Script para mejorar la experiencia de usuario -->
-    
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form[action="/api/login"]');
+        const submitBtn = form?.querySelector('button[type="submit"]');
+
+        if (form) {
+          form.addEventListener('submit', function() {
+            if (submitBtn) {
+              submitBtn.setAttribute('disabled', 'true');
+              submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            }
+            window.showPreloader('Iniciando sesión...');
+          });
+        }
+      });
+    </script>
+
+    <Preloader />
 </body>
 </html>
 

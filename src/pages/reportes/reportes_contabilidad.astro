@@ -618,7 +618,7 @@ console.log("[Reportes Contabilidad] Datos procesados:", reportDataInicial);
                     
                     const coloresIngresos = [colors.green, colors.blue, colors.purple, colors.yellow, colors.teal];
                     chartInstances.ingresos = new Chart(ingresosCtx, {
-                        type: 'doughnut',
+                        type: 'bar',
                         data: {
                             labels: datos.ingresosPorCategoria.map(item => item.categoria),
                             datasets: [{
@@ -638,8 +638,8 @@ console.log("[Reportes Contabilidad] Datos procesados:", reportDataInicial);
                                 tooltip: {
                                     callbacks: {
                                         label: function(context) {
-                                            return context.label + ': $' + 
-                                                new Intl.NumberFormat('es-CO').format(context.parsed);
+                                            return context.label + ': $' +
+                                                new Intl.NumberFormat('es-CO').format(context.parsed.y || context.parsed);
                                         }
                                     }
                                 }

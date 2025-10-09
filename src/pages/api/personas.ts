@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '@lib/supabase';
+import { toTitleCaseEs } from '@/utils/titleCaseEs';
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   console.log("--- [API /api/personas] Petición POST recibida ---");
@@ -63,9 +64,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
 
     // --- 4. CONSTRUCCIÓN DEL OBJETO PERSONA ---
     const personaData = {
-      nombres: formData.get('nombres')?.toString(),
-      primer_apellido: formData.get('primer_apellido')?.toString(),
-      segundo_apellido: formData.get('segundo_apellido')?.toString() || null,
+      nombres: toTitleCaseEs(formData.get('nombres')?.toString() || ''),
+      primer_apellido: toTitleCaseEs(formData.get('primer_apellido')?.toString() || ''),
+      segundo_apellido: toTitleCaseEs(formData.get('segundo_apellido')?.toString() || '' ) || null,
       tipo_id: formData.get('tipo_id')?.toString(),
       numero_id: formData.get('numero_id')?.toString(),
       fecha_nacimiento: formData.get('fecha_nacimiento')?.toString(),

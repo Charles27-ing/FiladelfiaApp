@@ -1,6 +1,7 @@
 // src/pages/api/personas/[id]/update.ts - VERSIÓN OPTIMIZADA CON BUCKET CORRECTO
 import type { APIRoute } from "astro";
 import { supabase } from "@/lib/supabase";
+import { toTitleCaseEs } from "@/utils/titleCaseEs";
 
 export const POST: APIRoute = async ({ params, request, redirect }) => {
   const isAjax = request.headers.get('X-Requested-With') === 'XMLHttpRequest';
@@ -23,9 +24,10 @@ export const POST: APIRoute = async ({ params, request, redirect }) => {
     const formData = await request.formData();
     
     // ✅ EXTRAER TODOS LOS CAMPOS (SIN EDAD)
-    const nombres = formData.get("nombres")?.toString().trim();
-    const primer_apellido = formData.get("primer_apellido")?.toString().trim();
-    const segundo_apellido = formData.get("segundo_apellido")?.toString().trim() || null;
+    const nombres = toTitleCaseEs(formData.get("nombres")?.toString().trim() || "");
+    const primer_apellido = toTitleCaseEs(formData.get("primer_apellido")?.toString().trim() || "");
+    const segundo_apellidoRaw = formData.get("segundo_apellido")?.toString().trim() || null;
+    const segundo_apellido = segundo_apellidoRaw ? toTitleCaseEs(segundo_apellidoRaw) : null;
     const numero_id = formData.get("numero_id")?.toString().trim();
     const tipo_id = formData.get("tipo_id")?.toString().trim();
     const email = formData.get("email")?.toString().trim();

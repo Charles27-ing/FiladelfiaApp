@@ -543,6 +543,16 @@ const userEmail = session.user?.email || 'Invitado';
 								Dashboard Reportes
 							</a>
 						</nav>
+
+						<!-- Botón de cerrar sesión móvil -->
+						<div class="px-4 pt-4 border-t border-white/20">
+							<a href="/api/logout" class="mobile-nav-button group flex items-center px-4 py-3 text-base font-semibold text-green-100 rounded-xl hover:bg-red-500/20 hover:text-white transition-all duration-300">
+								<svg class="mr-4 h-6 w-6 text-green-200 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+								</svg>
+								Cerrar Sesión
+							</a>
+						</div>
 					</div>
 
 					<!-- Footer del menú móvil -->
@@ -618,6 +628,7 @@ const userEmail = session.user?.email || 'Invitado';
 						if (window.location.pathname.startsWith('/contabilidad')) {
 							contabilidadMenuButton.setAttribute('aria-expanded', 'true');
 							contabilidadSubmenu.classList.remove('hidden');
+							contabilidadSubmenu.classList.add('expanded');
 							const icon = contabilidadMenuButton.querySelector('svg:last-child') as HTMLElement;
 							if (icon) {
 								icon.style.transform = 'rotate(180deg)';
