@@ -240,12 +240,151 @@ const userEmail = session.user?.email || 'Invitado';
 				max-height: 500px;
 				opacity: 1;
 			}
+
+			/* Estilos para menú colapsable */
+			.sidebar-text {
+				opacity: 0;
+				width: 0;
+				overflow: hidden;
+				transition: all 0.3s ease;
+				white-space: nowrap;
+				text-overflow: ellipsis;
+			}
+
+			aside:hover .sidebar-text {
+				opacity: 1;
+				width: auto;
+			}
+
+			aside:not(:hover) .nav-button,
+			aside:not(:hover) .contabilidad-button {
+				justify-content: center;
+			}
+
+			aside:hover .nav-button,
+			aside:hover .contabilidad-button {
+				justify-content: flex-start;
+			}
+
+			#main-content {
+				padding-left: 5rem;
+			}
+
+			/* Normalización de tamaño para íconos SVG en la barra lateral */
+			#sidebar .nav-button svg,
+			#sidebar .contabilidad-button svg {
+				width: 24px !important;
+				height: 24px !important;
+				min-width: 24px;
+				min-height: 24px;
+				flex-shrink: 0;
+				display: block;
+				stroke-width: 2;
+			}
+
+			/* Avatar del usuario en el sidebar */
+			#sidebar .glass-effect svg {
+				width: 24px !important;
+				height: 24px !important;
+				min-width: 24px;
+				min-height: 24px;
+				flex-shrink: 0;
+				display: block;
+				margin-inline: auto; /* centro dentro del contenedor blanco */
+				stroke-width: 2;
+			}
+
+			/* Contenedor del avatar (círculo blanco): bloquear desbordes y reforzar centrado */
+			#sidebar .glass-effect .flex-shrink-0 {
+				overflow: hidden; /* evita desborde visual hacia la derecha */
+				display: flex; /* asegurar centrado */
+				align-items: center;
+				justify-content: center;
+			}
+
+			/* Regla general: ningún SVG del sidebar debe desbordar su contenedor */
+			#sidebar svg {
+				max-width: 100%;
+				max-height: 100%;
+				display: block;
+				overflow: hidden;
+			}
+
+			/* Evitar desbordes horizontales del sidebar y submenú */
+			#sidebar,
+			#sidebar * {
+				box-sizing: border-box;
+			}
+
+			#contabilidad-submenu {
+				overflow-x: hidden;
+			}
+
+			/* Estado colapsado: centrar íconos y evitar desbordes */
+			aside:not(:hover) .nav-button svg,
+			aside:not(:hover) .contabilidad-button svg {
+				margin-right: 0; /* anula mr-4 en colapsado */
+				margin-left: 0;
+				margin-inline: auto; /* centra horizontalmente */
+			}
+
+			/* Quitar indentación de subítems en colapsado (e.g., enlaces con ml-8) */
+			aside:not(:hover) a.ml-8 {
+				margin-left: 0 !important;
+			}
+
+			/* Quitar padding izquierdo del contenedor del submenú siempre para alinear con top-level */
+			#contabilidad-submenu {
+				padding-left: 0 !important;
+			}
+
+			/* Normalizar padding de botones del submenú a px-2 para alinear con Dashboard */
+			#contabilidad-submenu .nav-button {
+				padding-left: 0.5rem !important;
+				padding-right: 0.5rem !important;
+			}
+
+			/* Asegurar que los botones ocupen todo el ancho para centrar contenido */
+			#sidebar .nav-button,
+			#sidebar .contabilidad-button {
+				width: 100%;
+				overflow: hidden; /* evita desbordes en hover/animaciones */
+			}
+
+			/* Reducir padding horizontal y desactivar escalado en hover cuando está colapsado */
+			aside:not(:hover) .nav-button,
+			aside:not(:hover) .contabilidad-button {
+				padding-left: 0.5rem !important;
+				padding-right: 0.5rem !important;
+			}
+
+			aside:not(:hover) .nav-button:hover svg,
+			aside:not(:hover) .contabilidad-button:hover svg {
+				transform: none !important;
+			}
+
+			/* Quitar efectos de sombra/resplandor en colapsado para evitar "overflow" visual */
+			aside:not(:hover) .nav-button svg,
+			aside:not(:hover) .contabilidad-button svg {
+				filter: none !important;
+			}
+
+			/* Desactivar transform del botón completo para evitar desplazamiento en colapsado */
+			aside:not(:hover) .nav-button:hover,
+			aside:not(:hover) .contabilidad-button:hover {
+				transform: none !important;
+			}
+
+			/* Ocultar el chevron del botón de contabilidad cuando está colapsado */
+			aside:not(:hover) #contabilidad-menu-button svg:last-child {
+				display: none;
+			}
 		</style>
 	</head>
 	<body class="h-full">
 		<div class="flex h-full">
 			<!-- SIDEBAR (MENÚ LATERAL IZQUIERDO) -->
-			<aside class="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0">
+			<aside id="sidebar" class="hidden lg:flex lg:w-20 hover:lg:w-80 lg:flex-col lg:fixed lg:inset-y-0 transition-all duration-300 overflow-hidden z-50">
 				<div class="flex flex-col flex-grow gradient-bg pt-5 pb-4 overflow-y-auto shadow-2xl">
 					<!-- Logo y título -->
 					<div class="flex items-center flex-shrink-0 px-4 mb-8">
@@ -256,8 +395,8 @@ const userEmail = session.user?.email || 'Invitado';
 								</svg>
 							</div>
 							<div class="ml-4">
-								<h1 class="text-xl font-bold text-white">Iglesia Filadelfia</h1>
-								<p class="text-sm text-green-100">Dios con nosotros</p>
+								<h1 class="text-xl font-bold text-white sidebar-text">Iglesia Filadelfia</h1>
+								<p class="text-sm text-green-100 sidebar-text">Dios con nosotros</p>
 							</div>
 						</div>
 					</div>
@@ -272,10 +411,10 @@ const userEmail = session.user?.email || 'Invitado';
 									</svg>
 								</div>
 								<div class="ml-4 flex-1 min-w-0">
-									<p class="text-sm font-semibold text-gray-800 truncate">
+									<p class="text-sm font-semibold text-gray-800 truncate sidebar-text">
 										Hola, {userEmail.split('@')[0]}
 									</p>
-									<p class="text-xs text-gray-600 truncate">
+									<p class="text-xs text-gray-600 truncate sidebar-text">
 										{userEmail}
 									</p>
 								</div>
@@ -286,7 +425,7 @@ const userEmail = session.user?.email || 'Invitado';
 					<!-- Navegación principal -->
 					<nav class="flex-1 px-4 space-y-2">
 						<!-- Dashboard -->
-						<a href="/dashboard" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+						<a href="/dashboard" class={`nav-button group flex items-center px-2 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 							currentPath === '/dashboard'
 								? 'nav-item-active text-green-50'
 								: 'text-green-100 hover:nav-item-hover hover:text-white'
@@ -297,11 +436,11 @@ const userEmail = session.user?.email || 'Invitado';
 								<path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"/>
 								<path stroke-linecap="round" stroke-linejoin="round" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"/>
 							</svg>
-							Dashboard
+							<span class="sidebar-text">Dashboard</span>
 						</a>
 
 						<!-- Gestión de Personas -->
-						<a href="/personas" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+						<a href="/personas" class={`nav-button group flex items-center px-2 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 							currentPath.startsWith('/personas')
 								? 'nav-item-active text-green-50'
 								: 'text-green-100 hover:nav-item-hover hover:text-white'
@@ -311,7 +450,7 @@ const userEmail = session.user?.email || 'Invitado';
 							}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197M15 12a5 5 0 11-10 0 5 5 0 0110 0z"/>
 							</svg>
-							Gestión de Personas
+							<span class="sidebar-text">Gestión de Personas</span>
 						</a>
 
 						<!-- Registrar Persona -->
@@ -320,12 +459,12 @@ const userEmail = session.user?.email || 'Invitado';
 								? 'nav-item-active text-green-50'
 								: 'text-green-100 hover:nav-item-hover hover:text-white'
 						}`}>
-							<svg class={`mr-4 h-5 w-5 transition-all duration-300 ${
+							<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 								currentPath === '/personas/nueva' ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 							}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
 							</svg>
-							Registrar Persona
+							<span class="sidebar-text">Registrar Persona</span>
 						</a>
 
 						<!-- Contabilidad - Menú desplegable -->
@@ -335,7 +474,7 @@ const userEmail = session.user?.email || 'Invitado';
 									<svg class={`mr-4 h-6 w-6 transition-all duration-300 text-green-200 group-hover:text-white`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
 									</svg>
-									<span>Contabilidad</span>
+									<span class="sidebar-text">Contabilidad</span>
 								</div>
 								<svg class="ml-2 h-5 w-5 text-green-200 group-hover:text-white transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -345,42 +484,42 @@ const userEmail = session.user?.email || 'Invitado';
 								<a href="/contabilidad/nueva-transaccion" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 									currentPath === '/contabilidad/nueva-transaccion' ? 'nav-item-active text-green-50' : 'text-green-100 hover:nav-item-hover hover:text-white'
 								}`}>
-									<svg class={`mr-4 h-5 w-5 transition-all duration-300 ${
+									<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 										currentPath === '/contabilidad/nueva-transaccion' ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 									}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
 									</svg>
-									Registrar Transacción
+									<span class="sidebar-text">Registrar Transacción</span>
 								</a>
 								<a href="/contabilidad/transacciones" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 									currentPath === '/contabilidad/transacciones' ? 'nav-item-active text-green-50' : 'text-green-100 hover:nav-item-hover hover:text-white'
 								}`}>
-									<svg class={`mr-4 h-5 w-5 transition-all duration-300 ${
+									<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 										currentPath === '/contabilidad/transacciones' ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 									}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v12a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2v12"/>
 									</svg>
-									Listado de Transacciones
+									<span class="sidebar-text">Listado de Transacciones</span>
 								</a>
 								<a href="/contabilidad/actividades" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 									currentPath.startsWith('/contabilidad/actividades') ? 'nav-item-active text-green-50' : 'text-green-100 hover:nav-item-hover hover:text-white'
 								}`}>
-									<svg class={`mr-4 h-5 w-5 transition-all duration-300 ${
+									<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 										currentPath.startsWith('/contabilidad/actividades') ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 									}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
 									</svg>
-									Resumen de Actividades
+									<span class="sidebar-text">Resumen de Actividades</span>
 								</a>
 								<a href="/contabilidad/categorias" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
 									currentPath.startsWith('/contabilidad/categorias') ? 'nav-item-active text-green-50' : 'text-green-100 hover:nav-item-hover hover:text-white'
 								}`}>
-									<svg class={`mr-4 h-5 w-5 transition-all duration-300 ${
+									<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 										currentPath.startsWith('/contabilidad/categorias') ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 									}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 										<path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M3 12h18M3 17h18"/>
 									</svg>
-									Categorías
+									<span class="sidebar-text">Categorías</span>
 								</a>
 							</div>
 						</div>
@@ -396,7 +535,7 @@ const userEmail = session.user?.email || 'Invitado';
 							}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
 							</svg>
-							Dashboard Reportes
+							<span class="sidebar-text">Dashboard Reportes</span>
 						</a>
 					</nav>
 
@@ -406,14 +545,14 @@ const userEmail = session.user?.email || 'Invitado';
 							<svg class="mr-4 h-6 w-6 text-green-200 group-hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 								<path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
 							</svg>
-							Cerrar Sesión
+							<span class="sidebar-text">Cerrar Sesión</span>
 						</a>
 					</div>
 				</div>
 			</aside>
 
 			<!-- CONTENIDO PRINCIPAL -->
-			<div class="lg:pl-64 flex flex-col flex-1">
+			<div id="main-content" class="flex flex-col flex-1">
 				<!-- Header superior -->
 				<header class="glass-effect shadow-lg border-b border-white/20">
 					<div class="px-4 sm:px-6 lg:px-8">
@@ -635,6 +774,7 @@ const userEmail = session.user?.email || 'Invitado';
 							}
 						}
 					}
+
 				});
 			</script>
   </body>
