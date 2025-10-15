@@ -18,6 +18,34 @@ const { data: { session } } = await supabase.auth.getSession();
 if (!session) {
 	return Astro.redirect('/login');
 }
+// después de obtener session
+const { data: profile, error } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', session.user.id)
+  .single();
+  if (!profile) {
+  return Astro.redirect('/completar-perfil');
+  }
+const isAdmin = profile?.role === 'admin';
+
+
+
+// Cargar catálogos para modal rápido de usuarios (solo si es admin)
+let rolesCatalog: Array<{ slug: string; name: string }> = [];
+let sedesCatalog: Array<{ id: string; nombre_sede: string }> = [];
+if (isAdmin) {
+  const { data: rolesData } = await supabase
+    .from('roles')
+    .select('slug, name')
+    .order('id');
+  const { data: sedesData } = await supabase
+    .from('sedes')
+    .select('id, nombre_sede')
+    .order('nombre_sede');
+  rolesCatalog = rolesData ?? [];
+  sedesCatalog = sedesData ?? [];
+}
 
 // Determinar la página activa para el menú
 const currentPath = Astro.url.pathname;
@@ -36,350 +64,7 @@ const userEmail = session.user?.email || 'Invitado';
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-		<style>
-			/* Gradientes personalizados */
-			.gradient-bg {
-				background: linear-gradient(135deg, #068d60 0%, #087553fb 50%, #047857 100%);
-			}
-			.gradient-hover {
-				background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-			}
-			.gradient-accent {
-				background: linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
-			}
-			.glass-effect {
-				background: rgba(255, 255, 255, 0.95);
-				backdrop-filter: blur(10px);
-				border: 1px solid rgba(255, 255, 255, 0.2);
-			}
-			.nav-item-active {
-				background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.3) 100%);
-				border-right: 3px solid #10b981;
-				box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
-			}
-			.nav-item-hover {
-				background: rgba(16, 185, 129, 0.05);
-				transform: translateX(2px);
-				transition: all 0.3s ease;
-			}
-
-			/* Botones mejorados con efecto espada */
-			.nav-button {
-				position: relative;
-				overflow: hidden;
-				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-				border: 1px solid rgba(255, 255, 255, 0.1);
-				border-radius: 12px;
-				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-				transform-origin: left center;
-			}
-
-			.nav-button::before {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: -100%;
-				width: 100%;
-				height: 100%;
-				background: linear-gradient(90deg,
-					transparent 0%,
-					rgba(255, 255, 255, 0.4) 50%,
-					transparent 100%);
-				transition: left 0.6s ease;
-				z-index: 1;
-			}
-
-			.nav-button:hover {
-				background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%);
-				border-color: rgba(16, 185, 129, 0.3);
-				transform: translateX(4px) scale(1.02);
-				box-shadow:
-					0 8px 25px rgba(16, 185, 129, 0.2),
-					0 4px 10px rgba(16, 185, 129, 0.1),
-					inset 0 1px 0 rgba(255, 255, 255, 0.2);
-			}
-
-			.nav-button:hover::before {
-				left: 100%;
-			}
-
-			.nav-button:active {
-				transform: translateX(2px) scale(1.01);
-				transition: all 0.1s ease;
-			}
-
-			.nav-button svg {
-				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-				filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.3));
-			}
-
-			.nav-button:hover svg {
-				transform: scale(1.1);
-				filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
-			}
-
-			/* Botón de contabilidad mejorado */
-			.contabilidad-button {
-				position: relative;
-				overflow: hidden;
-				background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
-				border: 1px solid rgba(255, 255, 255, 0.08);
-				border-radius: 12px;
-				transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-				transform-origin: left center;
-			}
-
-			.contabilidad-button::before {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: -100%;
-				width: 100%;
-				height: 100%;
-				background: linear-gradient(90deg,
-					transparent 0%,
-					rgba(255, 255, 255, 0.5) 30%,
-					rgba(16, 185, 129, 0.3) 50%,
-					rgba(255, 255, 255, 0.5) 70%,
-					transparent 100%);
-				transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-				z-index: 1;
-			}
-
-			.contabilidad-button:hover {
-				background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.2) 100%);
-				border-color: rgba(16, 185, 129, 0.25);
-				transform: translateX(6px) scale(1.03);
-				box-shadow:
-					0 12px 30px rgba(16, 185, 129, 0.25),
-					0 6px 15px rgba(16, 185, 129, 0.15),
-					inset 0 1px 0 rgba(255, 255, 255, 0.15);
-			}
-
-			.contabilidad-button:hover::before {
-				left: 100%;
-			}
-
-			.contabilidad-button svg {
-				transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-				filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
-			}
-
-			.contabilidad-button:hover svg {
-				transform: scale(1.15) rotate(5deg);
-				filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.8));
-			}
-
-			/* Botón activo con efecto mejorado */
-			.nav-item-active {
-				background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%);
-				border-right: 4px solid #10b981;
-				box-shadow:
-					inset 0 0 15px rgba(16, 185, 129, 0.15),
-					0 4px 15px rgba(16, 185, 129, 0.2);
-				position: relative;
-			}
-
-			.nav-item-active::after {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: 0;
-				right: 0;
-				bottom: 0;
-				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-				pointer-events: none;
-				border-radius: 12px;
-			}
-
-			/* Efectos para el menú móvil */
-			.mobile-nav-button {
-				position: relative;
-				overflow: hidden;
-				background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-				border: 1px solid rgba(255, 255, 255, 0.1);
-				border-radius: 12px;
-				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-			}
-
-			.mobile-nav-button::before {
-				content: '';
-				position: absolute;
-				top: 0;
-				left: -100%;
-				width: 100%;
-				height: 100%;
-				background: linear-gradient(90deg,
-					transparent 0%,
-					rgba(255, 255, 255, 0.3) 50%,
-					transparent 100%);
-				transition: left 0.6s ease;
-				z-index: 1;
-			}
-
-			.mobile-nav-button:hover {
-				background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
-				border-color: rgba(255, 255, 255, 0.2);
-				transform: translateX(2px);
-				box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
-			}
-
-			.mobile-nav-button:hover::before {
-				left: 100%;
-			}
-
-			/* Transiciones para el submenú de contabilidad */
-			#contabilidad-submenu {
-				max-height: 0;
-				opacity: 0;
-				overflow: hidden;
-				transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-			}
-
-			#contabilidad-submenu.expanded {
-				max-height: 500px;
-				opacity: 1;
-			}
-
-			/* Estilos para menú colapsable */
-			.sidebar-text {
-				opacity: 0;
-				width: 0;
-				overflow: hidden;
-				transition: all 0.3s ease;
-				white-space: nowrap;
-				text-overflow: ellipsis;
-			}
-
-			aside:hover .sidebar-text {
-				opacity: 1;
-				width: auto;
-			}
-
-			aside:not(:hover) .nav-button,
-			aside:not(:hover) .contabilidad-button {
-				justify-content: center;
-			}
-
-			aside:hover .nav-button,
-			aside:hover .contabilidad-button {
-				justify-content: flex-start;
-			}
-
-			#main-content {
-				padding-left: 5rem;
-			}
-
-			/* Normalización de tamaño para íconos SVG en la barra lateral */
-			#sidebar .nav-button svg,
-			#sidebar .contabilidad-button svg {
-				width: 24px !important;
-				height: 24px !important;
-				min-width: 24px;
-				min-height: 24px;
-				flex-shrink: 0;
-				display: block;
-				stroke-width: 2;
-			}
-
-			/* Avatar del usuario en el sidebar */
-			#sidebar .glass-effect svg {
-				width: 24px !important;
-				height: 24px !important;
-				min-width: 24px;
-				min-height: 24px;
-				flex-shrink: 0;
-				display: block;
-				margin-inline: auto; /* centro dentro del contenedor blanco */
-				stroke-width: 2;
-			}
-
-			/* Contenedor del avatar (círculo blanco): bloquear desbordes y reforzar centrado */
-			#sidebar .glass-effect .flex-shrink-0 {
-				overflow: hidden; /* evita desborde visual hacia la derecha */
-				display: flex; /* asegurar centrado */
-				align-items: center;
-				justify-content: center;
-			}
-
-			/* Regla general: ningún SVG del sidebar debe desbordar su contenedor */
-			#sidebar svg {
-				max-width: 100%;
-				max-height: 100%;
-				display: block;
-				overflow: hidden;
-			}
-
-			/* Evitar desbordes horizontales del sidebar y submenú */
-			#sidebar,
-			#sidebar * {
-				box-sizing: border-box;
-			}
-
-			#contabilidad-submenu {
-				overflow-x: hidden;
-			}
-
-			/* Estado colapsado: centrar íconos y evitar desbordes */
-			aside:not(:hover) .nav-button svg,
-			aside:not(:hover) .contabilidad-button svg {
-				margin-right: 0; /* anula mr-4 en colapsado */
-				margin-left: 0;
-				margin-inline: auto; /* centra horizontalmente */
-			}
-
-			/* Quitar indentación de subítems en colapsado (e.g., enlaces con ml-8) */
-			aside:not(:hover) a.ml-8 {
-				margin-left: 0 !important;
-			}
-
-			/* Quitar padding izquierdo del contenedor del submenú siempre para alinear con top-level */
-			#contabilidad-submenu {
-				padding-left: 0 !important;
-			}
-
-			/* Normalizar padding de botones del submenú a px-2 para alinear con Dashboard */
-			#contabilidad-submenu .nav-button {
-				padding-left: 0.5rem !important;
-				padding-right: 0.5rem !important;
-			}
-
-			/* Asegurar que los botones ocupen todo el ancho para centrar contenido */
-			#sidebar .nav-button,
-			#sidebar .contabilidad-button {
-				width: 100%;
-				overflow: hidden; /* evita desbordes en hover/animaciones */
-			}
-
-			/* Reducir padding horizontal y desactivar escalado en hover cuando está colapsado */
-			aside:not(:hover) .nav-button,
-			aside:not(:hover) .contabilidad-button {
-				padding-left: 0.5rem !important;
-				padding-right: 0.5rem !important;
-			}
-
-			aside:not(:hover) .nav-button:hover svg,
-			aside:not(:hover) .contabilidad-button:hover svg {
-				transform: none !important;
-			}
-
-			/* Quitar efectos de sombra/resplandor en colapsado para evitar "overflow" visual */
-			aside:not(:hover) .nav-button svg,
-			aside:not(:hover) .contabilidad-button svg {
-				filter: none !important;
-			}
-
-			/* Desactivar transform del botón completo para evitar desplazamiento en colapsado */
-			aside:not(:hover) .nav-button:hover,
-			aside:not(:hover) .contabilidad-button:hover {
-				transform: none !important;
-			}
-
-			/* Ocultar el chevron del botón de contabilidad cuando está colapsado */
-			aside:not(:hover) #contabilidad-menu-button svg:last-child {
-				display: none;
-			}
-		</style>
+		<link rel="stylesheet" href="/src/styles/layout-protected.css">
 	</head>
 	<body class="h-full">
 		<div class="flex h-full">
@@ -529,7 +214,7 @@ const userEmail = session.user?.email || 'Invitado';
 							currentPath.startsWith('/reportes/reportes_index')
 								? 'nav-item-active text-green-50'
 								: 'text-green-100 hover:nav-item-hover hover:text-white'
-						}`}>
+						}`}> 
 							<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
 								currentPath.startsWith('/reportes/reportes_index') ? 'text-green-200' : 'text-green-200 group-hover:text-white'
 							}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -537,6 +222,19 @@ const userEmail = session.user?.email || 'Invitado';
 							</svg>
 							<span class="sidebar-text">Dashboard Reportes</span>
 						</a>
+
+						{isAdmin && (
+							<a href="/dashboard" class={`nav-button group flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+								currentPath === '/dashboard' ? 'nav-item-active text-green-50' : 'text-green-100 hover:nav-item-hover hover:text-white'
+							}`}>
+								<svg class={`mr-4 h-6 w-6 transition-all duration-300 ${
+									currentPath === '/dashboard' ? 'text-green-200' : 'text-green-200 group-hover:text-white'
+								}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1m0-6a4 4 0 110 8 4 4 0 010-8zm7-4a4 4 0 110 8 4 4 0 010-8z" />
+								</svg>
+								<span class="sidebar-text">Gestión de Usuarios</span>
+							</a>
+						)}
 					</nav>
 
 					<!-- Botón de cerrar sesión -->
@@ -568,8 +266,14 @@ const userEmail = session.user?.email || 'Invitado';
 							</div>
 
 							<!-- Título de la página (desktop) -->
-							<div class="hidden lg:flex lg:items-center">
+							<div class="hidden lg:flex lg:items-center gap-3">
 								<h1 class="text-xl font-bold text-gray-800">{title}</h1>
+								{isAdmin && currentPath === '/dashboard' && (
+								  <button id="quick-create-user" class="inline-flex items-center px-3 py-1.5 rounded-md text-sm text-white bg-emerald-600 hover:bg-emerald-700">
+									<svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6"/></svg>
+									Nuevo usuario
+								  </button>
+								)}
 							</div>
 
 							<!-- Información del usuario (móvil) -->
@@ -593,6 +297,48 @@ const userEmail = session.user?.email || 'Invitado';
 						</div>
 					</div>
 				</header>
+
+				<!-- Modal rápido: Crear usuario -->
+				{isAdmin && currentPath === '/dashboard' && (
+				<div id="quick-user-modal" class="fixed inset-0 z-50 hidden">
+					<div class="fixed inset-0 bg-black/40"></div>
+					<div class="fixed inset-0 flex items-center justify-center p-4">
+						<div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+							<h3 class="text-lg font-semibold text-slate-800 mb-4">Crear usuario rápido</h3>
+							<form id="quick-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div class="md:col-span-2">
+									<label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+									<input type="email" name="email" required class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="usuario@dominio.com" />
+								</div>
+								<div class="md:col-span-2">
+									<label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+									<input type="text" name="full_name" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="Nombre completo" />
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+									<select name="role" required class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+										{rolesCatalog.map(r => <option value={r.slug}>{r.name}</option>)}
+									</select>
+								</div>
+								<div>
+									<label class="block text-sm font-medium text-slate-700 mb-1">Sede</label>
+									<select name="sede_id" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+										<option value="">Sin sede</option>
+										{sedesCatalog.map(s => <option value={s.id}>{s.nombre_sede}</option>)}
+									</select>
+								</div>
+								<div class="md:col-span-2 flex items-center justify-between mt-2">
+									<p id="quick-status" class="text-sm text-slate-500"></p>
+									<div class="space-x-2">
+										<button type="button" id="quick-cancel" class="px-3 py-1.5 rounded-md border border-slate-300 text-slate-700">Cancelar</button>
+										<button type="submit" class="px-3 py-1.5 rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Crear</button>
+									</div>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+				)}
 
 				<!-- Área de contenido principal -->
 				<main class="flex-1 overflow-y-auto bg-gradient-to-br from-white via-green-50/30 to-emerald-50/50">
@@ -693,90 +439,95 @@ const userEmail = session.user?.email || 'Invitado';
 							</a>
 						</div>
 					</div>
-
-					<!-- Footer del menú móvil -->
-					<div class="flex-shrink-0 flex border-t border-white/20 p-4">
-						<div class="flex items-center">
-							<div class="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-								<svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-								</svg>
-							</div>
-							<div class="ml-4">
-								<p class="text-base font-semibold text-white">{userEmail.split('@')[0]}</p>
-								<p class="text-sm font-medium text-green-100">Ver perfil</p>
-							</div>
-						</div>
-					</div>
 				</div>
 			</div>
 
-			<!-- Scripts para funcionalidad del menú móvil -->
 			<script>
-				document.addEventListener('DOMContentLoaded', function() {
-					const mobileMenuButton = document.getElementById('mobile-menu-button');
-					const mobileMenu = document.getElementById('mobile-menu');
-					const mobileMenuClose = document.getElementById('mobile-menu-close');
-					const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
-
-					// Abrir menú móvil
-					if (mobileMenuButton) {
-						mobileMenuButton.addEventListener('click', function() {
-							mobileMenu?.classList.remove('hidden');
-						});
-					}
-
-					// Cerrar menú móvil
-					function closeMobileMenu() {
-						mobileMenu?.classList.add('hidden');
-					}
-
-					if (mobileMenuClose) {
-						mobileMenuClose.addEventListener('click', closeMobileMenu);
-					}
-
-					if (mobileMenuOverlay) {
-						mobileMenuOverlay.addEventListener('click', closeMobileMenu);
-					}
-
-					// Cerrar menú con tecla Escape
-					document.addEventListener('keydown', function(e) {
-						if (e.key === 'Escape') {
-							closeMobileMenu();
+			  document.addEventListener('DOMContentLoaded', function() {
+			  // Menú desplegable de Contabilidad
+				const contabilidadMenuButton = document.getElementById('contabilidad-menu-button');
+				const contabilidadSubmenu = document.getElementById('contabilidad-submenu');
+				if (contabilidadMenuButton && contabilidadSubmenu) {
+					contabilidadMenuButton.addEventListener('click', (ev) => {
+						const btn = ev.currentTarget;
+						if (!(btn instanceof HTMLElement)) return;
+						const expanded = btn.getAttribute('aria-expanded') === 'true';
+						btn.setAttribute('aria-expanded', (!expanded).toString());
+						contabilidadSubmenu.classList.toggle('expanded', !expanded);
+						const iconEl = btn.querySelector('svg:last-child');
+						if (iconEl instanceof HTMLElement) {
+							iconEl.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
 						}
 					});
-
-					// Menú desplegable de Contabilidad
-					const contabilidadMenuButton = document.getElementById('contabilidad-menu-button');
-					const contabilidadSubmenu = document.getElementById('contabilidad-submenu');
-
-					if (contabilidadMenuButton && contabilidadSubmenu) {
-						contabilidadMenuButton.addEventListener('click', function() {
-							const expanded = this.getAttribute('aria-expanded') === 'true';
-							this.setAttribute('aria-expanded', (!expanded).toString());
-							contabilidadSubmenu.classList.toggle('expanded', !expanded);
-
-							// Rotar el ícono de la flecha
-							const icon = this.querySelector('svg:last-child') as HTMLElement;
-							if (icon) {
-								icon.style.transform = expanded ? 'rotate(0deg)' : 'rotate(180deg)';
-							}
-						});
-
-						// Mantener abierto el submenú si la ruta actual está dentro de contabilidad
-						if (window.location.pathname.startsWith('/contabilidad')) {
-							contabilidadMenuButton.setAttribute('aria-expanded', 'true');
-							contabilidadSubmenu.classList.remove('hidden');
-							contabilidadSubmenu.classList.add('expanded');
-							const icon = contabilidadMenuButton.querySelector('svg:last-child') as HTMLElement;
-							if (icon) {
-								icon.style.transform = 'rotate(180deg)';
-							}
+					if (window.location.pathname.startsWith('/contabilidad')) {
+						contabilidadMenuButton.setAttribute('aria-expanded', 'true');
+						contabilidadSubmenu.classList.remove('hidden');
+						contabilidadSubmenu.classList.add('expanded');
+						const iconEl = contabilidadMenuButton.querySelector('svg:last-child');
+						if (iconEl instanceof HTMLElement) {
+							iconEl.style.transform = 'rotate(180deg)';
 						}
 					}
-
-				});
+				}
+			  });
 			</script>
+
+			<script>
+            document.addEventListener('DOMContentLoaded', function() {
+          // Modal rápido de creación de usuario (Dashboard)
+          const quickBtn = document.getElementById('quick-create-user') as HTMLButtonElement | null;
+          const quickModal = document.getElementById('quick-user-modal') as HTMLElement | null;
+          const quickCancel = document.getElementById('quick-cancel') as HTMLButtonElement | null;
+          const quickForm = document.getElementById('quick-user-form') as HTMLFormElement | null;
+          const quickStatus = document.getElementById('quick-status') as HTMLElement | null;
+          
+          if (quickBtn && quickModal) {
+            quickBtn.addEventListener('click', () => quickModal.classList.remove('hidden'));
+          }
+          
+          function closeQuick() { 
+            if (quickModal) quickModal.classList.add('hidden'); 
+          }
+          
+          if (quickCancel) quickCancel.addEventListener('click', closeQuick);
+          
+          if (quickForm && quickStatus) {
+            quickForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              quickStatus.textContent = '';
+              
+              const fd = new FormData(quickForm);
+              const payload = Object.fromEntries(fd.entries());
+              const body = {
+                email: String(payload.email || '').trim(),
+                full_name: String(payload.full_name || '').trim(),
+                role: String(payload.role || '').trim(),
+                sede_id: payload.sede_id ? String(payload.sede_id) : null
+              };
+              
+              const res = await fetch('/api/user/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+              });
+              
+              const data = await res.json().catch(() => ({} as any));
+              if (res.ok) {
+                quickStatus.textContent = 'Usuario creado';
+                quickStatus.className = 'text-sm text-emerald-700';
+                
+                setTimeout(() => {
+                  closeQuick();
+                  // Redirigir al dashboard tras crear
+                  window.location.href = '/dashboard';
+                }, 700);
+              } else {
+                quickStatus.textContent = data?.error || 'Error al crear';
+                quickStatus.className = 'text-sm text-red-600';
+              }
+            });
+          }
+        });
+      </script>
   </body>
 </html>
-

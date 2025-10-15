@@ -1,0 +1,300 @@
+---
+import LayoutProtected from "@layouts/LayoutProtected.astro";
+import { supabase } from "@lib/supabase";
+
+// Autenticación
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) {
+  return Astro.redirect('/login');
+}
+
+// Cargar perfil y verificar admin
+const { data: profile } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', session.user.id)
+  .single();
+
+const isAdmin = profile?.role === 'admin';
+const userEmail = session?.user?.email ?? 'Usuario';
+
+// Cargar sedes y roles para selects (solo si es admin)
+let sedesList: Array<any> = [];
+let rolesList: Array<any> = [];
+let usersList: Array<any> = [];
+
+if (isAdmin) {
+  const { data: sedes, error: sedesErr } = await supabase
+    .from('sedes')
+    .select('id, nombre_sede')
+    .order('nombre_sede');
+
+  const { data: roles, error: rolesErr } = await supabase
+    .from('roles')
+    .select('slug, name')
+    .order('id');
+
+  // Cargar perfiles actuales (listado) con emails usando service role
+  let users = [];
+  try {
+    // Usar service role para obtener usuarios con emails
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_KEY;
+    
+    if (supabaseUrl && supabaseServiceKey) {
+      const { createClient } = await import('@supabase/supabase-js');
+      const admin = createClient(supabaseUrl, supabaseServiceKey, { auth: { persistSession: false } });
+      
+      const { data: usersWithEmails, error } = await admin.rpc('get_users_with_emails');
+      if (!error && usersWithEmails) {
+        users = usersWithEmails;
+      }
+    }
+  } catch (error) {
+    console.error('Error cargando usuarios:', error);
+    // Fallback: cargar sin emails
+    const { data: fallbackUsers } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, sede_id, sedes(nombre_sede)')
+      .order('full_name', { nullsFirst: true });
+    users = fallbackUsers || [];
+  }
+
+  sedesList = sedes ?? [];
+  rolesList = roles ?? [];
+  usersList = users ?? [];
+}
+---
+
+<LayoutProtected title="Dashboard">
+  <div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Bienvenido, {userEmail}</h1>
+    
+    {!isAdmin ? (
+      <div class="bg-white rounded-xl shadow p-6 border border-slate-200">
+        <p class="text-slate-700">
+          Selecciona un módulo del menú lateral para comenzar
+        </p>
+      </div>
+    ) : (
+      <>
+        <div class="bg-white rounded-xl shadow p-6 mb-8 border border-slate-200">
+          <h2 class="text-lg font-semibold text-slate-800 mb-4">Crear nuevo usuario</h2>
+          <form id="create-user-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+              <input type="email" name="email" required class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="usuario@dominio.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+              <input type="text" name="full_name" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="Nombre completo" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+              <select name="role" required class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+                {rolesList.map(r => <option value={r.slug}>{r.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Sede</label>
+              <select name="sede_id" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+                <option value="">Sin sede</option>
+                {sedesList.map(s => <option value={s.id}>{s.nombre_sede}</option>)}
+              </select>
+            </div>
+            <div class="md:col-span-2 flex items-center gap-3">
+              <button type="submit" class="inline-flex items-center px-4 py-2 rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Crear usuario</button>
+              <span id="create-user-status" class="text-sm"></span>
+            </div>
+          </form>
+        </div>
+
+        <div class="bg-white rounded-xl shadow p-6 border border-slate-200">
+          <h2 class="text-lg font-semibold text-slate-800 mb-4">Usuarios</h2>
+          {usersList.length === 0 ? (
+            <p class="text-slate-500">No hay usuarios registrados aún.</p>
+          ) : (
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Email</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Nombre</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Rol</th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold text-slate-600">Sede</th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold text-slate-600">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-slate-200">
+                  {usersList.map(u => (
+                    <tr>
+                      <td class="px-4 py-2 text-sm text-slate-800">{u.email || u.id}</td>
+                      <td class="px-4 py-2 text-sm text-slate-800">{u.full_name || '-'}</td>
+                      <td class="px-4 py-2 text-sm text-slate-800">{u.role}</td>
+                      <td class="px-4 py-2 text-sm text-slate-800">{u.sedes?.nombre_sede || '-'}</td>
+                      <td class="px-4 py-2 text-right">
+                        <button class="px-3 py-1.5 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                          data-action="edit-user"
+                          data-id={u.id}
+                          data-name={u.full_name || ''}
+                          data-role={u.role}
+                          data-sede={u.sede_id || ''}
+                        >Editar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </>
+    )}
+  </div>
+
+  {isAdmin && (
+    <script define:vars={{ rolesList, sedesList }}>
+      const form = document.getElementById('create-user-form');
+      const statusEl = document.getElementById('create-user-status');
+      if (form instanceof HTMLFormElement && statusEl instanceof HTMLElement) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          statusEl.textContent = '';
+          const fd = new FormData(form);
+          const payload = Object.fromEntries(fd.entries());
+          const body = {
+            email: String(payload.email || '').trim(),
+            full_name: String(payload.full_name || '').trim(),
+            role: String(payload.role || '').trim(),
+            sede_id: payload.sede_id ? String(payload.sede_id) : null
+          };
+          const res = await fetch('/api/user/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            statusEl.textContent = 'Usuario creado correctamente';
+            statusEl.className = 'text-sm text-emerald-700';
+            setTimeout(() => location.reload(), 800);
+          } else {
+            statusEl.textContent = data?.error || 'Error al crear usuario';
+            statusEl.className = 'text-sm text-red-600';
+          }
+        });
+      }
+
+      // Edit modal logic
+      const editModal = document.createElement('div');
+      const rolesListStr = rolesList.map(r => `<option value="${r.slug}">${r.name}</option>`).join('');
+      const sedesListStr = sedesList.map(s => `<option value="${s.id}">${s.nombre_sede}</option>`).join('');
+      
+      editModal.innerHTML = `
+        <div id="edit-user-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50">
+          <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-xl bg-white">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Editar usuario</h3>
+            <form id="edit-user-form" class="space-y-4">
+              <input type="hidden" name="user_id" />
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                <input type="text" name="full_name" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+                <select name="role" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+                  ${rolesListStr}
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Sede</label>
+                <select name="sede_id" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500">
+                  <option value="">Sin sede</option>
+                  ${sedesListStr}
+                </select>
+              </div>
+              <div class="flex justify-end gap-2 pt-2">
+                <button type="button" id="edit-cancel" class="px-3 py-1.5 text-sm rounded-md bg-slate-200 text-slate-800">Cancelar</button>
+                <button type="submit" class="px-3 py-1.5 text-sm rounded-md bg-emerald-600 text-white">Guardar</button>
+              </div>
+              <div id="edit-status" class="text-sm mt-2"></div>
+            </form>
+          </div>
+        </div>`;
+      const modalElement = editModal.firstElementChild;
+      if (modalElement) {
+        document.body.appendChild(modalElement);
+      }
+
+      const table = document.querySelector('table');
+      const editUserModal = document.getElementById('edit-user-modal');
+      const editForm = document.getElementById('edit-user-form');
+      const editStatus = document.getElementById('edit-status');
+      const editCancel = document.getElementById('edit-cancel');
+
+      function openEditModal(payload) {
+        if (!(editUserModal && editForm)) return;
+        editUserModal.classList.remove('hidden');
+        const idInput = editForm.querySelector('input[name="user_id"]');
+        if (idInput instanceof HTMLInputElement) idInput.value = payload.id || '';
+        const nameInput = editForm.querySelector('input[name="full_name"]');
+        if (nameInput instanceof HTMLInputElement) nameInput.value = payload.name || '';
+        const roleSelect = editForm.querySelector('select[name="role"]');
+        if (roleSelect instanceof HTMLSelectElement) roleSelect.value = payload.role || '';
+        const sedeSelect = editForm.querySelector('select[name="sede_id"]');
+        if (sedeSelect instanceof HTMLSelectElement) sedeSelect.value = payload.sede || '';
+        if (editStatus) editStatus.textContent = '';
+      }
+      function closeEditModal() {
+        if (editUserModal) editUserModal.classList.add('hidden');
+      }
+      if (editCancel) editCancel.addEventListener('click', closeEditModal);
+
+      if (table) {
+        table.addEventListener('click', (e) => {
+          const target = e.target;
+          const btn = target ? target.closest('button[data-action="edit-user"]') : null;
+          if (!btn) return;
+          const payload = {
+            id: btn.getAttribute('data-id') || '',
+            name: btn.getAttribute('data-name') || '',
+            role: btn.getAttribute('data-role') || '',
+            sede: btn.getAttribute('data-sede') || ''
+          };
+          openEditModal(payload);
+        });
+      }
+
+      if (editForm instanceof HTMLFormElement && editStatus instanceof HTMLElement) {
+        editForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          editStatus.textContent = '';
+          const fd = new FormData(editForm);
+          const payload = Object.fromEntries(fd.entries());
+          const body = {
+            user_id: String(payload.user_id || ''),
+            full_name: String(payload.full_name || '').trim(),
+            role: String(payload.role || '').trim(),
+            sede_id: payload.sede_id ? String(payload.sede_id) : null
+          };
+          const res = await fetch('/api/user/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(body)
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            editStatus.textContent = 'Actualizado';
+            editStatus.className = 'text-sm text-emerald-700';
+            setTimeout(() => location.reload(), 600);
+          } else {
+            editStatus.textContent = data?.error || 'Error al actualizar';
+            editStatus.className = 'text-sm text-red-600';
+          }
+        });
+      }
+    </script>
+  )}
+</LayoutProtected>

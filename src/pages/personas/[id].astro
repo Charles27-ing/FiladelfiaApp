@@ -84,6 +84,39 @@ const errorMessage = Astro.url.searchParams.get("error");
 ---
 
 <LayoutProtected title={`${persona.nombres} ${persona.primer_apellido}`}>
+  <style>
+    .avatar-wrap {
+      position: relative;
+      height: 8rem;
+      width: 8rem;
+      border-radius: 9999px;
+    }
+    .avatar-wrap::before {
+      content: "";
+      position: absolute;
+      inset: -6px;
+      border-radius: 9999px;
+      padding: 3px;
+      background: conic-gradient(from 0deg, #34d399, #06b6d4, #a78bfa, #34d399);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: spin360 4s linear infinite;
+    }
+    .avatar-wrap img,
+    .avatar-wrap .avatar-placeholder {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      width: 100%;
+      border-radius: 9999px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    @keyframes spin360 { to { transform: rotate(360deg); } }
+  </style>
   
   <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
@@ -106,13 +139,16 @@ const errorMessage = Astro.url.searchParams.get("error");
           <div class="flex items-center space-x-6">
             <div class="flex-shrink-0">
               {persona.url_foto ? (
-                // **FOTO MÁS GRANDE**
-                <img class="h-32 w-32 rounded-full object-cover ring-4 ring-slate-200" src={persona.url_foto} alt={`Foto de ${persona.nombres}`} />
+                <div class="avatar-wrap">
+                  <img class="object-cover" src={persona.url_foto} alt={`Foto de ${persona.nombres}`} />
+                </div>
               ) : (
-                <div class="h-32 w-32 rounded-full bg-slate-700 ring-4 ring-slate-700 flex items-center justify-center">
-                  <svg class="h-20 w-20 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                  </svg>
+                <div class="avatar-wrap">
+                  <div class="avatar-placeholder bg-slate-700">
+                    <svg class="h-20 w-20 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                  </div>
                 </div>
               )}
             </div>

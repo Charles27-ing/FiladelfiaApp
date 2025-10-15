@@ -14,6 +14,7 @@ export function initializePersonasFilters(initialPersonas) {
   const personasContainerMobile = document.getElementById("personas-container-mobile");
   const totalCountSpan = document.getElementById("total-count");
   const filteredCountSpan = document.getElementById("filtered-count");
+  const bautizadosCountSpan = document.getElementById("bautizados-count");
 
   // Elementos de paginación
   const prevBtnMobile = document.getElementById("prev-btn-mobile");
@@ -400,6 +401,9 @@ export function initializePersonasFilters(initialPersonas) {
     currentPage = 1; // Resetear a la primera página al filtrar
     renderPersonasDesktop(filtered);
     renderPersonasMobile(filtered);
+
+    const bautizadosFiltrados = filtered.filter(p => p.bautizado === true).length;
+    if (bautizadosCountSpan) bautizadosCountSpan.textContent = bautizadosFiltrados.toString();
   }
 
   // ✅ EVENT LISTENERS

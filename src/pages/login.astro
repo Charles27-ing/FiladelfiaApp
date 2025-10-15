@@ -13,8 +13,20 @@ const errorMessage = Astro.url.searchParams.get('error');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iniciar Sesión | App Filadelfia</title>
     <link rel="stylesheet" href="/src/styles/global.css">
+    <style>
+      /* Fondo para móvil, igualando breakpoints al resto del sitio */
+      @media (max-width: 1023.98px) {
+        body.login-page {
+          background-image: url('/filadelfia.jpg');
+          background-size: cover;
+          background-position: center;
+          background-repeat: no-repeat;
+          background-attachment: fixed;
+        }
+      }
+    </style>
 </head>
-<body class="h-full">
+<body class="h-full login-page">
     <div class="flex min-h-full">
         <!-- ====================================================== -->
         <!-- COLUMNA IZQUIERDA: IMAGEN DE BIENVENIDA -->
@@ -23,7 +35,7 @@ const errorMessage = Astro.url.searchParams.get('error');
             <!-- Imagen de fondo -->
             <img 
                 class="absolute inset-0 h-full w-full object-cover" 
-                src="https://scontent.fclo9-1.fna.fbcdn.net/v/t51.82787-15/534328334_17987149034840011_7156183086442288104_n.webp?stp=dst-jpg_tt6&_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=uM2jf2YN4t4Q7kNvwGp9VgP&_nc_oc=AdllYwBaxanXK5FYVbwjxyxy1y4omMa-w7T-3uW5dkioIoGVJXcK-3-5MIhVHvjuIic&_nc_zt=23&_nc_ht=scontent.fclo9-1.fna&_nc_gid=XmkNndvy1A9a2KvTNwmt_Q&oh=00_AfaSluZ14KVmdti54ldHUdvnN5dTV1u_SpNHVicQOM5IaA&oe=68BF6412"
+                src="/filadelfia.jpg"
                 alt="Comunidad de fe reunida en oración"
             >
             <!-- Overlay con gradiente para mejorar legibilidad -->

@@ -4,6 +4,11 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error("Las variables de entorno de Supabase (URL y Service Role Key) no están definidas.");
+}
+
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export const POST: APIRoute = async ({ request }) => {

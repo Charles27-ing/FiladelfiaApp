@@ -1,0 +1,366 @@
+/* Gradientes personalizados */
+.gradient-bg {
+	background: linear-gradient(135deg, #068d60 0%, #087553fb 50%, #047857 100%);
+}
+.gradient-hover {
+	background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+.gradient-accent {
+	background: linear-gradient(135deg, #6ee7b7 0%, #34d399 50%, #10b981 100%);
+}
+.glass-effect {
+	background: rgba(255, 255, 255, 0.95);
+	backdrop-filter: blur(10px);
+	border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.nav-item-active {
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.3) 100%);
+	border-right: 3px solid #10b981;
+	box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.1);
+}
+.nav-item-hover {
+	background: rgba(16, 185, 129, 0.05);
+	transform: translateX(2px);
+	transition: all 0.3s ease;
+}
+
+/* Botones mejorados con efecto espada */
+.nav-button {
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	transform-origin: left center;
+}
+
+.nav-button::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.4) 50%,
+		transparent 100%);
+	transition: left 0.6s ease;
+	z-index: 1;
+}
+
+.nav-button:hover {
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%);
+	border-color: rgba(16, 185, 129, 0.3);
+	transform: translateX(4px) scale(1.02);
+	box-shadow:
+		0 8px 25px rgba(16, 185, 129, 0.2),
+		0 4px 10px rgba(16, 185, 129, 0.1),
+		inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.nav-button:hover::before {
+	left: 100%;
+}
+
+.nav-button:active {
+	transform: translateX(2px) scale(1.01);
+	transition: all 0.1s ease;
+}
+
+.nav-button svg {
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.3));
+}
+
+.nav-button:hover svg {
+	transform: scale(1.1);
+	filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.6));
+}
+
+/* Botón de contabilidad mejorado */
+.contabilidad-button {
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	border-radius: 12px;
+	transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+	transform-origin: left center;
+}
+
+.contabilidad-button::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.5) 30%,
+		rgba(16, 185, 129, 0.3) 50%,
+		rgba(255, 255, 255, 0.5) 70%,
+		transparent 100%);
+	transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+	z-index: 1;
+}
+
+.contabilidad-button:hover {
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.2) 100%);
+	border-color: rgba(16, 185, 129, 0.25);
+	transform: translateX(6px) scale(1.03);
+	box-shadow:
+		0 12px 30px rgba(16, 185, 129, 0.25),
+		0 6px 15px rgba(16, 185, 129, 0.15),
+		inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.contabilidad-button:hover::before {
+	left: 100%;
+}
+
+.contabilidad-button svg {
+	transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+	filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.4));
+}
+
+.contabilidad-button:hover svg {
+	transform: scale(1.15) rotate(5deg);
+	filter: drop-shadow(0 0 12px rgba(16, 185, 129, 0.8));
+}
+
+/* Botón activo con efecto mejorado */
+.nav-item-active {
+	background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(5, 150, 105, 0.35) 100%);
+	border-right: 4px solid #10b981;
+	box-shadow:
+		inset 0 0 15px rgba(16, 185, 129, 0.15),
+		0 4px 15px rgba(16, 185, 129, 0.2);
+	position: relative;
+}
+
+.nav-item-active::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+	pointer-events: none;
+	border-radius: 12px;
+}
+
+/* Efectos para el menú móvil */
+.mobile-nav-button {
+	position: relative;
+	overflow: hidden;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-radius: 12px;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-nav-button::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: -100%;
+	width: 100%;
+	height: 100%;
+	background: linear-gradient(90deg,
+		transparent 0%,
+		rgba(255, 255, 255, 0.3) 50%,
+		transparent 100%);
+	transition: left 0.6s ease;
+	z-index: 1;
+}
+
+.mobile-nav-button:hover {
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+	border-color: rgba(255, 255, 255, 0.2);
+	transform: translateX(2px);
+	box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-button:hover::before {
+	left: 100%;
+}
+
+/* Transiciones para el submenú de contabilidad */
+#contabilidad-submenu {
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#contabilidad-submenu.expanded {
+	max-height: 500px;
+	opacity: 1;
+}
+
+/* Estilos para menú colapsable */
+.sidebar-text {
+	opacity: 0;
+	width: 0;
+	overflow: hidden;
+	transition: all 0.3s ease;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+aside:hover .sidebar-text {
+	opacity: 1;
+	width: auto;
+}
+
+aside:not(:hover) .nav-button,
+aside:not(:hover) .contabilidad-button {
+	justify-content: center;
+}
+
+aside:hover .nav-button,
+aside:hover .contabilidad-button {
+	justify-content: flex-start;
+}
+
+#main-content {
+	padding-left: 0; /* sin barra lateral en móvil */
+}
+
+/* Aplicar padding solo en pantallas grandes (lg: ≥1024px) */
+@media (min-width: 1024px) {
+	#main-content {
+		padding-left: 5rem;
+	}
+}
+
+/* Normalización de tamaño para íconos SVG en la barra lateral */
+#sidebar .nav-button svg,
+#sidebar .contabilidad-button svg {
+	width: 24px !important;
+	height: 24px !important;
+	min-width: 24px;
+	min-height: 24px;
+	flex-shrink: 0;
+	display: block;
+	stroke-width: 2;
+}
+
+/* Avatar del usuario en el sidebar */
+#sidebar .glass-effect svg {
+	width: 24px !important;
+	height: 24px !important;
+	min-width: 24px;
+	min-height: 24px;
+	flex-shrink: 0;
+	display: block;
+	margin-inline: auto; /* centro dentro del contenedor blanco */
+	stroke-width: 2;
+}
+
+/* Contenedor del avatar (círculo blanco): bloquear desbordes y reforzar centrado */
+#sidebar .glass-effect .flex-shrink-0 {
+	overflow: hidden; /* evita desborde visual hacia la derecha */
+	display: flex; /* asegurar centrado */
+	align-items: center;
+	justify-content: center;
+}
+
+/* Regla general: ningún SVG del sidebar debe desbordar su contenedor */
+#sidebar svg {
+	max-width: 100%;
+	max-height: 100%;
+	display: block;
+	overflow: hidden;
+}
+
+/* Header móvil: centrar y evitar desbordes del ícono de usuario */
+header .lg\:hidden .flex-shrink-0.h-8.w-8 {
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+header .lg\:hidden .flex-shrink-0.h-8.w-8 svg {
+	width: 24px !important;
+	height: 24px !important;
+	display: block;
+	margin: 0 auto;
+}
+
+/* Evitar desbordes horizontales del sidebar y submenú */
+#sidebar,
+#sidebar * {
+	box-sizing: border-box;
+}
+
+#contabilidad-submenu {
+	overflow-x: hidden;
+}
+
+/* Menú móvil habilitado: sin ocultar forzado */
+
+/* Estado colapsado: centrar íconos y evitar desbordes */
+aside:not(:hover) .nav-button svg,
+aside:not(:hover) .contabilidad-button svg {
+	margin-right: 0; /* anula mr-4 en colapsado */
+	margin-left: 0;
+	margin-inline: auto; /* centra horizontalmente */
+}
+
+/* Quitar indentación de subítems en colapsado (e.g., enlaces con ml-8) */
+aside:not(:hover) a.ml-8 {
+	margin-left: 0 !important;
+}
+
+/* Quitar padding izquierdo del contenedor del submenú siempre para alinear con top-level */
+#contabilidad-submenu {
+	padding-left: 0 !important;
+}
+
+/* Normalizar padding de botones del submenú a px-2 para alinear con Dashboard */
+#contabilidad-submenu .nav-button {
+	padding-left: 0.5rem !important;
+	padding-right: 0.5rem !important;
+}
+
+/* Asegurar que los botones ocupen todo el ancho para centrar contenido */
+#sidebar .nav-button,
+#sidebar .contabilidad-button {
+	width: 100%;
+	overflow: hidden; /* evita desbordes en hover/animaciones */
+}
+
+/* Reducir padding horizontal y desactivar escalado en hover cuando está colapsado */
+aside:not(:hover) .nav-button,
+aside:not(:hover) .contabilidad-button {
+	padding-left: 0.5rem !important;
+	padding-right: 0.5rem !important;
+}
+
+aside:not(:hover) .nav-button:hover svg,
+aside:not(:hover) .contabilidad-button:hover svg {
+	transform: none !important;
+}
+
+/* Quitar efectos de sombra/resplandor en colapsado para evitar "overflow" visual */
+aside:not(:hover) .nav-button svg,
+aside:not(:hover) .contabilidad-button svg {
+	filter: none !important;
+}
+
+/* Desactivar transform del botón completo para evitar desplazamiento en colapsado */
+aside:not(:hover) .nav-button:hover,
+aside:not(:hover) .contabilidad-button:hover {
+	transform: none !important;
+}
+
+/* Ocultar el chevron del botón de contabilidad cuando está colapsado */
+aside:not(:hover) #contabilidad-menu-button svg:last-child {
+	display: none;
+}
