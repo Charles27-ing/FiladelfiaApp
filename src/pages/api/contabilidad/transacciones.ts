@@ -10,6 +10,14 @@ export const GET: APIRoute = async ({ url }) => {
       return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
     }
 
+    // determinar si es admin para filtrar o no
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('role, sede_id')
+      .eq('id', user.id)
+      .single();
+    const isAdmin = myProfile?.role === 'admin';
+
     let query = supabase
       .from('transacciones')
       .select(`
@@ -22,6 +30,11 @@ export const GET: APIRoute = async ({ url }) => {
     const actividadId = new URL(url).searchParams.get('actividad_id');
     if (actividadId) {
       query = query.eq('actividad_id', actividadId);
+    }
+
+    // si no es admin, limitar por user_id o por sede si aplica
+    if (!isAdmin) {
+      query = query.eq('user_id', user.id);
     }
 
     const { data, error } = await query;
@@ -85,6 +98,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       .from('transacciones')
       .select('numero_transaccion')
       .eq('tipo', tipo)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1);
 
@@ -100,6 +114,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         // Mantener el número por defecto si hay error
       }
     }
+    // obtener sede desde perfil para coherencia de RLS
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('sede_id')
+      .eq('id', user.id)
+      .single();
+
     const { data, error: insertError } = await supabase
       .from('transacciones')
       .insert([{ 
@@ -112,6 +133,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
         user_id: user.id, 
         evidencia,
         persona_id,
+        sede_id: myProfile?.sede_id || null,
         numero_transaccion,
         estado: 'activa', // Para el manejo de anulaciones
       }])

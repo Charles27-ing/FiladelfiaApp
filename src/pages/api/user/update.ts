@@ -24,7 +24,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(JSON.stringify({ error: 'Configuración de Supabase faltante' }), { status: 500 });
     }
 
-    const client = createClient(supabaseUrl, supabaseAnonKey);
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
     
     // Verificar usuario autenticado
     console.log('Verificando usuario con token...');

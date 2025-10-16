@@ -18,7 +18,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       return new Response(JSON.stringify({ error: 'Configuración de Supabase faltante' }), { status: 500 });
     }
 
-    const client = createClient(supabaseUrl, supabaseAnonKey);
+    const client = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } }
+    });
     
     // Verificar usuario autenticado
     const { data: { user }, error: userError } = await client.auth.getUser(accessToken);
@@ -48,6 +51,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log('Request body:', body);
     
     const email: string = body.email;
+    const password: string | null = body.password ?? null;
     const full_name: string | null = body.full_name ?? null;
     const role: string | null = body.role ?? null;
     const sede_id: string | null = body.sede_id ?? null;
@@ -71,6 +75,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     console.log('Creando usuario con email:', email);
     const { data: created, error: errCreate } = await admin.auth.admin.createUser({
       email,
+      // si viene contraseña, crear cuenta con contraseña; si no, solo confirmar email
+      ...(password ? { password } : {}),
       email_confirm: true
     });
     

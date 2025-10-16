@@ -3,8 +3,20 @@
 import LayoutProtected from "@layouts/LayoutProtected.astro";
 import { supabase } from "@lib/supabase";
 
-// Obtener datos para reportes de personas
-const { data: personas, error: personasError } = await supabase
+// Sesión y perfil para controlar alcance
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) {
+  return Astro.redirect('/login');
+}
+const { data: myProfile } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', session.user.id)
+  .single();
+const isAdmin = myProfile?.role === 'admin';
+
+// Obtener datos para reportes de personas (filtrar por usuario si no es admin)
+let personasQuery = supabase
     .from("persona")
     .select(`
         id,
@@ -12,9 +24,16 @@ const { data: personas, error: personasError } = await supabase
         bautizado,
         estado_civil,
         departamento,
+        user_id,
         sede:sedes(nombre_sede),
         escala:escala_de_crecimiento(nombre_escala)
     `);
+
+if (!isAdmin) {
+  personasQuery = personasQuery.eq('user_id', session.user.id);
+}
+
+const { data: personas, error: personasError } = await personasQuery;
 
 const { data: sedes, error: sedesError } = await supabase
     .from("sedes")
@@ -30,10 +49,10 @@ const reportData = {
     totalPersonas: personas?.length || 0,
     
     // Personas por sede
-    personasPorSede: sedes?.map(sede => ({
+    personasPorSede: (sedes || []).map((sede: { id: string; nombre_sede: string }) => ({
         sede: sede.nombre_sede,
-        cantidad: personas?.filter(p => p.sede?.nombre_sede === sede.nombre_sede).length || 0
-    })) || [],
+        cantidad: (personas || []).filter((p: any) => p.sede?.nombre_sede === sede.nombre_sede).length || 0
+    })),
     
     // Distribución por género
     distribucionGenero: {
@@ -57,16 +76,16 @@ const reportData = {
     
     // Top 5 departamentos
     topDepartamentos: Object.entries(
-        personas?.reduce((acc, p) => {
+        (personas || []).reduce((acc: Record<string, number>, p: any) => {
             if (p.departamento) {
                 acc[p.departamento] = (acc[p.departamento] || 0) + 1;
             }
             return acc;
-        }, {}) || {}
+        }, {} as Record<string, number>)
     )
-    .sort(([,a], [,b]) => b - a)
+    .sort(([,a]: [string, number], [,b]: [string, number]) => (b as number) - (a as number))
     .slice(0, 5)
-    .map(([dept, count]) => ({ departamento: dept, cantidad: count }))
+    .map(([dept, count]) => ({ departamento: dept as string, cantidad: count as number }))
 };
 
 console.log("[Reportes Personas] Datos procesados:", reportData);

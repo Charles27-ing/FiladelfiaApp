@@ -11,7 +11,20 @@ export const GET: APIRoute = async () => {
       return new Response(JSON.stringify({ error: 'Debe iniciar sesión' }), { status: 401 });
     }
 
-    const { data, error } = await supabase.from('actividades').select('*');
+    // Verificar rol para alcance de datos
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+    const isAdmin = myProfile?.role === 'admin';
+
+    let query = supabase.from('actividades').select('*');
+    if (!isAdmin) {
+      query = query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query;
     if (error) {
       console.error("[API] Error al consultar actividades:", error);
       return new Response(JSON.stringify({ error: 'Error al cargar actividades' }), { status: 500 });

@@ -63,6 +63,13 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
 
     // --- 4. CONSTRUCCIÓN DEL OBJETO PERSONA ---
+    // obtener sede desde el perfil del usuario (para consistencia y RLS)
+    const { data: myProfile } = await supabase
+      .from('profiles')
+      .select('sede_id')
+      .eq('id', user.id)
+      .single();
+
     const personaData = {
       nombres: toTitleCaseEs(formData.get('nombres')?.toString() || ''),
       primer_apellido: toTitleCaseEs(formData.get('primer_apellido')?.toString() || ''),
@@ -80,7 +87,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       bautizado: formData.get('bautizado') === 'true',
       url_foto: fotoUrl,
       user_id: user.id,
-      sede_id: formData.get('sede_id')?.toString(),
+      sede_id: myProfile?.sede_id || formData.get('sede_id')?.toString(),
     };
 
     console.log("[API] Objeto persona construido:", personaData);

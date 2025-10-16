@@ -11,12 +11,12 @@ if (!session) {
 // Cargar perfil y verificar admin
 const { data: profile } = await supabase
   .from('profiles')
-  .select('role')
+  .select('role, full_name')
   .eq('id', session.user.id)
   .single();
 
 const isAdmin = profile?.role === 'admin';
-const userEmail = session?.user?.email ?? 'Usuario';
+const displayName = profile?.full_name || 'Usuario';
 
 // Cargar sedes y roles para selects (solo si es admin)
 let sedesList: Array<any> = [];
@@ -68,7 +68,7 @@ if (isAdmin) {
 
 <LayoutProtected title="Dashboard">
   <div class="max-w-5xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-    <h1 class="text-2xl font-bold text-slate-800 mb-6">Bienvenido, {userEmail}</h1>
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Bienvenido, {displayName}</h1>
     
     {!isAdmin ? (
       <div class="bg-white rounded-xl shadow p-6 border border-slate-200">
@@ -84,6 +84,10 @@ if (isAdmin) {
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
               <input type="email" name="email" required class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="usuario@dominio.com" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+              <input type="password" name="password" class="w-full rounded-md border-slate-300 focus:border-emerald-500 focus:ring-emerald-500" placeholder="Opcional: establecer contraseña" />
             </div>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
@@ -103,7 +107,8 @@ if (isAdmin) {
               </select>
             </div>
             <div class="md:col-span-2 flex items-center gap-3">
-              <button type="submit" class="inline-flex items-center px-4 py-2 rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Crear usuario</button>
+              <button id="create-user-btn" type="submit" class="inline-flex items-center px-4 py-2 rounded-md text-white bg-emerald-600 hover:bg-emerald-700">Crear usuario</button>
+              <svg id="create-user-spinner" class="hidden animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
               <span id="create-user-status" class="text-sm"></span>
             </div>
           </form>
@@ -156,14 +161,19 @@ if (isAdmin) {
     <script define:vars={{ rolesList, sedesList }}>
       const form = document.getElementById('create-user-form');
       const statusEl = document.getElementById('create-user-status');
+      const createBtn = document.getElementById('create-user-btn');
+      const createSpinner = document.getElementById('create-user-spinner');
       if (form instanceof HTMLFormElement && statusEl instanceof HTMLElement) {
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
           statusEl.textContent = '';
+          if (createBtn) { createBtn.setAttribute('disabled', 'true'); createBtn.classList.add('opacity-60'); }
+          if (createSpinner) createSpinner.classList.remove('hidden');
           const fd = new FormData(form);
           const payload = Object.fromEntries(fd.entries());
           const body = {
             email: String(payload.email || '').trim(),
+            password: String(payload.password || '').trim(),
             full_name: String(payload.full_name || '').trim(),
             role: String(payload.role || '').trim(),
             sede_id: payload.sede_id ? String(payload.sede_id) : null
@@ -183,6 +193,8 @@ if (isAdmin) {
             statusEl.textContent = data?.error || 'Error al crear usuario';
             statusEl.className = 'text-sm text-red-600';
           }
+          if (createBtn) { createBtn.removeAttribute('disabled'); createBtn.classList.remove('opacity-60'); }
+          if (createSpinner) createSpinner.classList.add('hidden');
         });
       }
 
@@ -231,6 +243,9 @@ if (isAdmin) {
       const editUserModal = document.getElementById('edit-user-modal');
       const editForm = document.getElementById('edit-user-form');
       const editStatus = document.getElementById('edit-status');
+      const editSpinner = document.createElement('span');
+      editSpinner.innerHTML = '<svg class="animate-spin h-5 w-5 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>';
+      editSpinner.className = 'hidden';
       const editCancel = document.getElementById('edit-cancel');
 
       function openEditModal(payload) {
@@ -270,6 +285,8 @@ if (isAdmin) {
         editForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           editStatus.textContent = '';
+          editStatus.appendChild(editSpinner);
+          editSpinner.classList.remove('hidden');
           const fd = new FormData(editForm);
           const payload = Object.fromEntries(fd.entries());
           const body = {
@@ -293,6 +310,7 @@ if (isAdmin) {
             editStatus.textContent = data?.error || 'Error al actualizar';
             editStatus.className = 'text-sm text-red-600';
           }
+          editSpinner.classList.add('hidden');
         });
       }
     </script>

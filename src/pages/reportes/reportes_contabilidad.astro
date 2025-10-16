@@ -3,8 +3,20 @@
 import LayoutProtected from "@layouts/LayoutProtected.astro";
 import { supabase } from "@lib/supabase";
 
-// Obtener datos para reportes de contabilidad
-const { data: transacciones, error: transaccionesError } = await supabase
+// Sesión y rol para alcance de datos
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) {
+  return Astro.redirect('/login');
+}
+const { data: myProfile } = await supabase
+  .from('profiles')
+  .select('role')
+  .eq('id', session.user.id)
+  .single();
+const isAdmin = myProfile?.role === 'admin';
+
+// Obtener datos para reportes de contabilidad (filtrar por usuario si no es admin)
+let transaccionesQuery = supabase
     .from("transacciones")
     .select(`
         id,
@@ -13,19 +25,53 @@ const { data: transacciones, error: transaccionesError } = await supabase
         tipo,
         descripcion,
         estado,
+        user_id,
         categoria:categoria_id(id, nombre),
         actividad:actividad_id(id, nombre)
     `)
-    .eq('estado', 'activa') // Solo transacciones activas
+    .eq('estado', 'activa')
     .order('fecha', { ascending: false });
 
-const { data: actividades, error: actividadesError } = await supabase
+if (!isAdmin) {
+  transaccionesQuery = transaccionesQuery.eq('user_id', session.user.id);
+}
+
+const { data: transacciones, error: transaccionesError } = await transaccionesQuery;
+
+// Cargar actividades con alcance por usuario si no es admin
+let actividadesQuery = supabase
     .from("actividades")
-    .select("id, nombre, estado, meta, fecha_inicio, fecha_fin");
+    .select("id, nombre, estado, meta, fecha_inicio, fecha_fin, user_id");
+
+if (!isAdmin) {
+  actividadesQuery = actividadesQuery.eq('user_id', session.user.id);
+}
+
+const { data: actividades, error: actividadesError } = await actividadesQuery;
 
 const { data: categorias, error: categoriasError } = await supabase
     .from("categorias")
     .select("id, nombre");
+
+// Mapear perfiles para conocer sede de cada usuario (para metas por sede)
+const { data: perfiles } = await supabase
+  .from('profiles')
+  .select('id, sede_id');
+const profilesMap: Record<string, string | null> = {};
+for (const p of (perfiles || [])) {
+  // @ts-ignore
+  profilesMap[p.id] = p.sede_id || null;
+}
+
+// Cargar sedes para mostrar nombres
+const { data: sedes } = await supabase
+  .from('sedes')
+  .select('id, nombre_sede');
+const sedesMap: Record<string, string> = {};
+for (const s of (sedes || [])) {
+  // @ts-ignore
+  sedesMap[s.id] = s.nombre_sede;
+}
 
 if (transaccionesError || actividadesError || categoriasError) {
     console.error("Error al cargar datos para reportes:", 
@@ -33,7 +79,7 @@ if (transaccionesError || actividadesError || categoriasError) {
 }
 
 // Función para procesar datos con filtros de fecha
-function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
+function procesarDatos(transaccionesFiltradas: any[], actividadesFiltradas: any[], profilesByUserId: Record<string, string | null>, sedesById: Record<string, string>) {
     return {
         // Totales generales
         totalIngresos: transaccionesFiltradas?.filter(t => t.tipo === 'ingreso')
@@ -51,7 +97,7 @@ function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
         
         // Flujo de caja mensual
         flujoCajaMensual: (() => {
-            const meses = {};
+            const meses: Record<string, { ingresos: number; egresos: number }> = {};
             const fechaActual = new Date();
             
             // Inicializar últimos 12 meses
@@ -62,7 +108,7 @@ function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
             }
             
             // Procesar transacciones
-            transaccionesFiltradas?.forEach(t => {
+            (transaccionesFiltradas || []).forEach((t: any) => {
                 const fecha = new Date(t.fecha);
                 const mesKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
                 
@@ -84,8 +130,8 @@ function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
         
         // Distribución de ingresos por categoría
         ingresosPorCategoria: (() => {
-            const ingresos = transaccionesFiltradas?.filter(t => t.tipo === 'ingreso') || [];
-            const distribucion = {};
+            const ingresos = (transaccionesFiltradas || []).filter((t: any) => t.tipo === 'ingreso');
+            const distribucion: Record<string, number> = {};
             
             ingresos.forEach(t => {
                 const categoria = t.categoria?.nombre || 'Sin categoría';
@@ -100,8 +146,8 @@ function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
         
         // Distribución de egresos por categoría
         egresosPorCategoria: (() => {
-            const egresos = transaccionesFiltradas?.filter(t => t.tipo === 'egreso') || [];
-            const distribucion = {};
+            const egresos = (transaccionesFiltradas || []).filter((t: any) => t.tipo === 'egreso');
+            const distribucion: Record<string, number> = {};
             
             egresos.forEach(t => {
                 const categoria = t.categoria?.nombre || 'Sin categoría';
@@ -122,25 +168,49 @@ function procesarDatos(transaccionesFiltradas, actividadesFiltradas) {
         },
         
         // Cumplimiento de metas por actividad
-        cumplimientoMetas: actividadesFiltradas?.map(actividad => {
-            const ingresosActividad = transaccionesFiltradas?.filter(t => 
-                t.tipo === 'ingreso' && t.actividad?.id === actividad.id
-            ).reduce((sum, t) => sum + t.monto, 0) || 0;
-            
-            return {
-                nombre: actividad.nombre,
-                meta: actividad.meta,
-                recaudado: ingresosActividad,
-                porcentaje: actividad.meta > 0 ? (ingresosActividad / actividad.meta) * 100 : 0
-            };
-        }).slice(0, 10) || [] // Top 10 actividades
+        // Cumplimiento de metas por sede
+        // metaPorSede: suma de metas de actividades agrupadas por sede del creador
+        // recaudadoPorSede: suma de ingresos de transacciones agrupadas por sede_id
+        cumplimientoMetas: (() => {
+            const metaPorSede: Record<string, number> = {};
+            const recaudadoPorSede: Record<string, number> = {};
+
+            for (const act of (actividadesFiltradas || [])) {
+                const sedeId = profilesByUserId[act.user_id || ''] || null;
+                if (!sedeId) continue;
+                metaPorSede[sedeId] = (metaPorSede[sedeId] || 0) + (act.meta || 0);
+            }
+
+            for (const t of (transaccionesFiltradas || [])) {
+                if (t.tipo !== 'ingreso') continue;
+                const sedeId = t.sede_id || null;
+                if (!sedeId) continue;
+                recaudadoPorSede[sedeId] = (recaudadoPorSede[sedeId] || 0) + (t.monto || 0);
+            }
+
+            const sedeIds = Array.from(new Set([
+                ...Object.keys(metaPorSede),
+                ...Object.keys(recaudadoPorSede)
+            ]));
+
+            return sedeIds.map((sid) => {
+                const meta = metaPorSede[sid] || 0;
+                const recaudado = recaudadoPorSede[sid] || 0;
+                return {
+                    sede: sedesById[sid] || sid,
+                    meta,
+                    recaudado,
+                    porcentaje: meta > 0 ? (recaudado / meta) * 100 : 0
+                };
+            });
+        })()
     };
 }
 
 // Datos iniciales (sin filtros)
-const reportDataInicial = procesarDatos(transacciones, actividades);
+const reportDataInicial = procesarDatos((transacciones || []) as any[], (actividades || []) as any[], profilesMap, sedesMap);
 
-console.log("[Reportes Contabilidad] Datos procesados:", reportDataInicial);
+console.log("[Reportes Contabilidad] Datos procesados:");
 ---
 
 <LayoutProtected title="Reportes de Contabilidad">
