@@ -3,6 +3,7 @@
 
 import { supabase } from '../lib/supabase';
 import type { Session } from "@supabase/supabase-js";
+import '../styles/layout-protected.css';
 
 interface Props {
 	title: string;
@@ -64,8 +65,6 @@ const userName = profile?.full_name || (userEmail ? userEmail.split('@')[0] : 'U
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
-		<link rel="stylesheet" href="/src/styles/layout-protected.css">
 	</head>
 	<body class="h-full">
 		<div class="flex h-full">

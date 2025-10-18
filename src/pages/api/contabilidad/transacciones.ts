@@ -94,26 +94,12 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     }
 
     const tipo_prefix = tipo === 'ingreso' ? 'ING' : 'EGR';
-    const { data: lastNum } = await supabase
-      .from('transacciones')
-      .select('numero_transaccion')
-      .eq('tipo', tipo)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
 
-    let numero_transaccion = `${tipo_prefix}001`;
-    if (lastNum && lastNum.length > 0 && lastNum[0].numero_transaccion) {
-      try {
-        const lastNumber = parseInt(lastNum[0].numero_transaccion.replace(tipo_prefix, ''), 10);
-        if (!isNaN(lastNumber)) {
-          numero_transaccion = `${tipo_prefix}${String(lastNumber + 1).padStart(3, '0')}`;
-        }
-      } catch (error) {
-        console.warn('Error al procesar número de transacción anterior:', error);
-        // Mantener el número por defecto si hay error
-      }
-    }
+    // Generar un número único usando timestamp completo y UUID parcial
+    const timestamp = Date.now();
+    const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const uniqueId = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const numero_transaccion = `${tipo_prefix}-${timestamp}-${randomSuffix}-${uniqueId}`;
     // obtener sede desde perfil para coherencia de RLS
     const { data: myProfile } = await supabase
       .from('profiles')

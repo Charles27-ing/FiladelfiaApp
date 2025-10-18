@@ -101,7 +101,7 @@ const errorMessage = url.searchParams.get('error');
                  </div>
 
                  <div class="bg-white/50 rounded-lg p-3 mb-4">
-                   <p class="text-xs text-gray-700 font-medium">Meta: <span class="text-gray-900">{(actividad as any).meta?.toLocaleString() ?? '0'} COP</span></p>
+                   <p class="text-xs text-gray-700 font-medium">Meta: <span class="text-gray-900" id={`meta-${actividad.id}`}>{(actividad as any).meta?.toLocaleString() ?? '0'} COP</span></p>
                    <p class="text-xs text-gray-700 mt-1">Inicio: {new Date(actividad.fecha_inicio).toLocaleDateString('es-CO')}</p>
                  </div>
 
@@ -382,7 +382,7 @@ const errorMessage = url.searchParams.get('error');
               if (!res.ok) continue;
               const trans: any[] = await res.json();
               const ingresos = trans.reduce((s: number, t: any) => t.tipo === 'ingreso' ? s + (t.monto || 0) : s, 0);
-              const metaEl = el.closest('div.bg-white')?.querySelector('p.text-xs span');
+              const metaEl = document.getElementById(`meta-${id}`);
               const metaText = metaEl?.textContent?.replace(/[^0-9]/g, '') || '0';
               const meta = parseFloat(metaText) || 0;
               const pct = meta > 0 ? Math.min((ingresos / meta) * 100, 100) : 0;

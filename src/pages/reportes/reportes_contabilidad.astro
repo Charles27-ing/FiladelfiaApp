@@ -900,20 +900,47 @@ console.log("[Reportes Contabilidad] Datos procesados:");
             });
 
             // Event listeners para filtros rápidos
-            document.querySelectorAll('.filtro-rapido').forEach(button => {
-                button.addEventListener('click', function() {
+            const filtrosRapidos = document.querySelectorAll('.filtro-rapido');
+            console.log('Filtros rápidos encontrados:', filtrosRapidos.length);
+            
+            filtrosRapidos.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('Filtro rápido clickeado:', this.dataset.periodo);
+                    
                     const dias = parseInt(this.dataset.periodo);
                     const fechaHasta = new Date();
                     const fechaDesde = new Date();
                     fechaDesde.setDate(fechaHasta.getDate() - dias);
+
+                    const fechaDesdeInput = document.getElementById('fechaDesde');
+                    const fechaHastaInput = document.getElementById('fechaHasta');
                     
-                    document.getElementById('fechaDesde').value = fechaDesde.toISOString().split('T')[0];
-                    document.getElementById('fechaHasta').value = fechaHasta.toISOString().split('T')[0];
-                    
-                    // Aplicar filtros automáticamente
-                    document.getElementById('aplicarFiltros').click();
+                    if (fechaDesdeInput && fechaHastaInput) {
+                        fechaDesdeInput.value = fechaDesde.toISOString().split('T')[0];
+                        fechaHastaInput.value = fechaHasta.toISOString().split('T')[0];
+
+                        // Aplicar filtros automáticamente
+                        const btnAplicar = document.getElementById('aplicarFiltros');
+                        if (btnAplicar) {
+                            btnAplicar.click();
+                        }
+                    }
                 });
             });
+
+            // Función para aplicar filtros automáticamente al cargar la página
+            function aplicarFiltrosAutomaticos() {
+                const fechaDesde = document.getElementById('fechaDesde').value;
+                const fechaHasta = document.getElementById('fechaHasta').value;
+
+                if (fechaDesde || fechaHasta) {
+                    document.getElementById('aplicarFiltros').click();
+                }
+            }
+
+            // Aplicar filtros automáticamente al cargar la página después de un pequeño delay
+            setTimeout(aplicarFiltrosAutomaticos, 100);
         };
         document.head.appendChild(script);
     </script>
