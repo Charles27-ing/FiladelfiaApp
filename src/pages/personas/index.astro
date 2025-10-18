@@ -378,19 +378,22 @@ const errorMessage = Astro.url.searchParams.get("error");
   <!-- ====================================================== -->
   <!-- SCRIPTS -->
 
-  <script type="module" define:vars={{ personasConEscalasYMinisterios }}>
+  <!-- Pasar datos a window primero -->
+  <script define:vars={{ personasConEscalasYMinisterios }}>
+    window.personasData = personasConEscalasYMinisterios;
+  </script>
+
+  <!-- Importar y ejecutar scripts -->
+  <script>
     import { initializePersonasFilters } from '../../scripts/personas-filters.js';
     import { initializePersonasActions, viewPerson, editPerson, deletePerson } from '../../scripts/personas-actions.js';
     
-    // ✅ EXPONER FUNCIONES A WINDOW (ESTO ES LO QUE FALTABA)
+    // ✅ EXPONER FUNCIONES A WINDOW
     window.viewPerson = viewPerson;
     window.editPerson = editPerson;
     window.deletePerson = deletePerson;
-    
-    // Datos de personas desde Astro
-    window.personasData = personasConEscalasYMinisterios;
   
-    // ✅ INICIALIZAR CON DOMContentLoaded (ESTADO ORIGINAL)
+    // ✅ INICIALIZAR CON DOMContentLoaded
     document.addEventListener('DOMContentLoaded', function() {
       console.log('DOM cargado, inicializando filtros y acciones...');
       console.log('Datos de personas:', window.personasData);

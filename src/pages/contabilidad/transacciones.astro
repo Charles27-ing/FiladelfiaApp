@@ -293,10 +293,11 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
 
   <script type="application/json" id="transacciones-data" set:html={transaccionesJson}></script>
   <script type="application/json" id="actividades-data" set:html={actividadesJson}></script>
-  <script type="module">
+  
+  <script>
     import { initializeTransaccionesFilters } from '../../scripts/transacciones-filters.ts';
     
-            document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
       try {
         const txEl = document.getElementById('transacciones-data');
         const actEl = document.getElementById('actividades-data');
