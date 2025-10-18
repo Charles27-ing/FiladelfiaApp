@@ -398,8 +398,8 @@ const userName = profile?.full_name || (userEmail ? userEmail.split('@')[0] : 'U
 			</div>
 
 			<script>
-			  document.addEventListener('DOMContentLoaded', function() {
-			  // Menú desplegable de Contabilidad
+			  function initializeLayout() {
+			    // Menú desplegable de Contabilidad
 				const contabilidadMenuButton = document.getElementById('contabilidad-menu-button');
 				const contabilidadSubmenu = document.getElementById('contabilidad-submenu');
 				if (contabilidadMenuButton && contabilidadSubmenu) {
@@ -424,7 +424,40 @@ const userName = profile?.full_name || (userEmail ? userEmail.split('@')[0] : 'U
 						}
 					}
 				}
-			  });
+
+				// Menú móvil
+				const mobileMenuButton = document.getElementById('mobile-menu-button');
+				const mobileMenu = document.getElementById('mobile-menu');
+				const mobileMenuClose = document.getElementById('mobile-menu-close');
+				const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+
+				if (mobileMenuButton && mobileMenu) {
+					// Abrir menú móvil
+					mobileMenuButton.addEventListener('click', () => {
+						mobileMenu.classList.remove('hidden');
+					});
+
+					// Cerrar menú móvil
+					const closeMobileMenu = () => {
+						mobileMenu.classList.add('hidden');
+					};
+
+					if (mobileMenuClose) {
+						mobileMenuClose.addEventListener('click', closeMobileMenu);
+					}
+
+					if (mobileMenuOverlay) {
+						mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+					}
+				}
+			  }
+
+			  // Ejecutar cuando el DOM esté listo
+			  if (document.readyState === 'loading') {
+			    document.addEventListener('DOMContentLoaded', initializeLayout);
+			  } else {
+			    initializeLayout();
+			  }
 			</script>
 
             

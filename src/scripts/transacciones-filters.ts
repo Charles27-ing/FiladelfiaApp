@@ -73,7 +73,15 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
   let currentPage = 1;
   const itemsPerPage = 15;
 
-  // La función formatCurrency ahora se importa del módulo export-utils
+  // Función para formatear moneda
+  function formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('es-CO', { 
+      style: 'currency', 
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  }
 
   // Renderizar transacciones
   function renderTransacciones() {
@@ -485,16 +493,6 @@ export function initializeTransaccionesFilters(initialTransacciones: Transaccion
     const neto = ingresos - egresos;
     
     return { ingresos, egresos, neto };
-  }
-
-  // Función para formatear moneda
-  function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('es-CO', { 
-      style: 'currency', 
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
   }
 
   // Función auxiliar para evitar errores de TypeScript
