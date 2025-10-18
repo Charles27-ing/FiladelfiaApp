@@ -345,7 +345,13 @@ const actividadIdParam = url.searchParams.get('actividad_id');
 
   <script>
     import { initializeNuevaTransaccionForm } from '../../scripts/nueva-transaccion.ts';
-    initializeNuevaTransaccionForm();
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeNuevaTransaccionForm);
+    } else {
+      initializeNuevaTransaccionForm();
+    }
   </script>
 
   <style>

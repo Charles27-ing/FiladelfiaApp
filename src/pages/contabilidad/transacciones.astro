@@ -297,7 +297,7 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
   <script>
     import { initializeTransaccionesFilters } from '../../scripts/transacciones-filters.ts';
     
-    document.addEventListener('DOMContentLoaded', () => {
+    function initFilters() {
       try {
         const txEl = document.getElementById('transacciones-data');
         const actEl = document.getElementById('actividades-data');
@@ -308,7 +308,14 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
       } catch (error) {
         console.error('Error cargando datos o inicializando filtros:', error);
       }
-    });
+    }
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFilters);
+    } else {
+      initFilters();
+    }
   </script>
 
   <style>

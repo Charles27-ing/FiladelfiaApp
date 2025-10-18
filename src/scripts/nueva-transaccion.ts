@@ -3,9 +3,7 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 export function initializeNuevaTransaccionForm() {
-  document.addEventListener('DOMContentLoaded', async () => {
-      
-    const form = document.getElementById('transaccion-form') as HTMLFormElement;
+  const form = document.getElementById('transaccion-form') as HTMLFormElement;
     const tipoSelect = document.getElementById('tipo') as HTMLSelectElement;
     const categoriaSelect = document.getElementById('categoria_id') as HTMLSelectElement;
     const actividadSelect = document.getElementById('actividad_id') as HTMLSelectElement;
@@ -335,5 +333,4 @@ export function initializeNuevaTransaccionForm() {
     if (actividadIdFromUrl && actividadSelect) {
       actividadSelect.value = actividadIdFromUrl;
     }
-  });
 }

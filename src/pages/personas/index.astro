@@ -393,9 +393,9 @@ const errorMessage = Astro.url.searchParams.get("error");
     window.editPerson = editPerson;
     window.deletePerson = deletePerson;
   
-    // ✅ INICIALIZAR CON DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('DOM cargado, inicializando filtros y acciones...');
+    // ✅ INICIALIZAR
+    function initPersonas() {
+      console.log('Inicializando filtros y acciones...');
       console.log('Datos de personas:', window.personasData);
       
       // Inicializar filtros y acciones
@@ -403,7 +403,14 @@ const errorMessage = Astro.url.searchParams.get("error");
       initializePersonasActions();
       
       console.log('Inicialización completada');
-    });
+    }
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initPersonas);
+    } else {
+      initPersonas();
+    }
   </script>
 
   <Preloader />

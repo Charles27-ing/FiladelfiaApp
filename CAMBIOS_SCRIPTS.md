@@ -11,11 +11,29 @@ import { func } from '/src/scripts/file.js';
 
 ## Solución Aplicada
 
+### Cambio 1: Rutas Relativas
 Se cambiaron todas las importaciones a **rutas relativas**:
 
 ```javascript
 // ✅ FUNCIONA EN PRODUCCIÓN
 import { func } from '../../scripts/file.js';
+```
+
+### Cambio 2: Separar Scripts con define:vars
+**Problema crítico descubierto**: `define:vars` no es compatible con imports de módulos ES6.
+
+**Solución**: Separar en dos scripts:
+```astro
+<!-- Script 1: Pasar datos con define:vars -->
+<script define:vars={{ data }}>
+  window.myData = data;
+</script>
+
+<!-- Script 2: Importar módulos -->
+<script>
+  import { myFunction } from '../../scripts/file.js';
+  // Usar window.myData aquí
+</script>
 ```
 
 ## Archivos Corregidos
@@ -28,9 +46,18 @@ import { initializePersonasActions, viewPerson, editPerson, deletePerson } from 
 ```
 
 **Después:**
-```javascript
-import { initializePersonasFilters } from '../../scripts/personas-filters.js';
-import { initializePersonasActions, viewPerson, editPerson, deletePerson } from '../../scripts/personas-actions.js';
+```astro
+<!-- Pasar datos a window primero -->
+<script define:vars={{ personasConEscalasYMinisterios }}>
+  window.personasData = personasConEscalasYMinisterios;
+</script>
+
+<!-- Importar y ejecutar scripts -->
+<script>
+  import { initializePersonasFilters } from '../../scripts/personas-filters.js';
+  import { initializePersonasActions, viewPerson, editPerson, deletePerson } from '../../scripts/personas-actions.js';
+  // ... resto del código
+</script>
 ```
 
 ### 2. `/src/pages/contabilidad/transacciones.astro`
