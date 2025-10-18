@@ -379,8 +379,8 @@ const errorMessage = Astro.url.searchParams.get("error");
   <!-- SCRIPTS -->
 
   <script type="module" define:vars={{ personasConEscalasYMinisterios }}>
-    import { initializePersonasFilters } from '/src/scripts/personas-filters.js';
-    import { initializePersonasActions, viewPerson, editPerson, deletePerson } from '/src/scripts/personas-actions.js';
+    import { initializePersonasFilters } from '../../scripts/personas-filters.js';
+    import { initializePersonasActions, viewPerson, editPerson, deletePerson } from '../../scripts/personas-actions.js';
     
     // ✅ EXPONER FUNCIONES A WINDOW (ESTO ES LO QUE FALTABA)
     window.viewPerson = viewPerson;

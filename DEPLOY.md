@@ -77,12 +77,31 @@ En el dashboard de Netlify, ve a:
 
 ## Solución de Problemas
 
+### Error de build en Windows (EPERM: operation not permitted, symlink)
+
+⚠️ **Problema conocido**: En Windows, el build puede fallar con un error de permisos al crear symlinks:
+```
+EPERM: operation not permitted, symlink
+```
+
+**Soluciones**:
+1. **Opción recomendada**: Desplegar directamente desde Git en Netlify (el build se hace en Linux)
+2. **Opción alternativa**: Ejecutar el terminal como Administrador y hacer el build
+3. **Para desarrollo**: Usar `pnpm run dev` que funciona sin problemas
+
+**Nota**: Este error solo ocurre en Windows durante el build local. El despliegue en Netlify funcionará correctamente porque usa Linux.
+
 ### CSS o JS no se cargan
 
-✅ **Solucionado**: Los archivos CSS ahora se importan correctamente usando la sintaxis de Astro:
+✅ **Solucionado**: 
+- Los archivos CSS ahora se importan correctamente usando la sintaxis de Astro:
 ```javascript
 import '../styles/layout-protected.css';
 ```
+- Los scripts JavaScript deben usar **rutas relativas** en lugar de rutas absolutas:
+  - ❌ Incorrecto: `import { func } from '/src/scripts/file.js';`
+  - ✅ Correcto: `import { func } from '../../scripts/file.js';`
+- Astro procesa y empaqueta estos archivos automáticamente durante el build
 
 ### Error de clave duplicada en transacciones
 
