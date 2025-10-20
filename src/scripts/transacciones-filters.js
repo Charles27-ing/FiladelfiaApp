@@ -1,4 +1,4 @@
-// src/scripts/transacciones-filters.ts
+// src/scripts/transacciones-filters.js
 // Importar librerías para exportación
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -6,47 +6,25 @@ import * as XLSX from 'xlsx';
 
 // Módulo de filtros de transacciones
 
-interface Transaccion {
-  id: string;
-  fecha: string;
-  monto: number;
-  tipo: 'ingreso' | 'egreso';
-  categoria_id: string;
-  categoria_nombre: string;
-  actividad_id?: string;
-  actividad_nombre?: string;
-  persona_id?: string;
-  persona_nombre?: string;
-  descripcion?: string;
-  evidencia?: string;
-  numero_transaccion?: string;
-  estado?: string;
-}
-
-interface Actividad {
-  id: string;
-  nombre: string;
-}
-
 /**
  * Inicializa los filtros y la paginación para el listado de transacciones.
- * @param initialTransacciones - Array inicial de transacciones.
- * @param initialActividades - Array inicial de actividades.
+ * @param {Array} initialTransacciones - Array inicial de transacciones.
+ * @param {Array} initialActividades - Array inicial de actividades.
  */
-export function initializeTransaccionesFilters(initialTransacciones: Transaccion[], initialActividades: Actividad[]) {
+export function initializeTransaccionesFilters(initialTransacciones, initialActividades) {
   console.log('Inicializando filtros con', initialTransacciones.length, 'transacciones y', initialActividades.length, 'actividades');
 
   // Elementos del DOM
-  const actividadFilter = document.getElementById('actividad_filter') as HTMLSelectElement;
-  const fechaInicioFilter = document.getElementById('fecha_inicio') as HTMLInputElement;
-  const fechaFinFilter = document.getElementById('fecha_fin') as HTMLInputElement;
-  const searchButton = document.getElementById('search_btn') as HTMLButtonElement;
-  const clearFiltersButton = document.getElementById('clear_filters') as HTMLButtonElement;
-  const transaccionesContainer = document.getElementById('transacciones-container') as HTMLElement;
-  const transaccionesContainerMobile = document.getElementById('transacciones-container-mobile') as HTMLElement;
-  const resumenContainer = document.getElementById('resumen-container') as HTMLElement;
-  const resumenIngresos = document.getElementById('resumen-ingresos') as HTMLElement;
-  const resumenEgresos = document.getElementById('resumen-egresos') as HTMLElement;
+  const actividadFilter = document.getElementById('actividad_filter');
+  const fechaInicioFilter = document.getElementById('fecha_inicio');
+  const fechaFinFilter = document.getElementById('fecha_fin');
+  const searchButton = document.getElementById('search_btn');
+  const clearFiltersButton = document.getElementById('clear_filters');
+  const transaccionesContainer = document.getElementById('transacciones-container');
+  const transaccionesContainerMobile = document.getElementById('transacciones-container-mobile');
+  const resumenContainer = document.getElementById('resumen-container');
+  const resumenIngresos = document.getElementById('resumen-ingresos');
+  const resumenEgresos = document.getElementById('resumen-egresos');
   const resumenNeto = document.getElementById('resumen-neto') as HTMLElement;
   const prevBtn = document.getElementById('prev-btn') as HTMLButtonElement;
   const nextBtn = document.getElementById('next-btn') as HTMLButtonElement;
