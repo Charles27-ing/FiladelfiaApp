@@ -291,20 +291,23 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
     </div>
   </div>
 
-  <script type="application/json" id="transacciones-data" set:html={transaccionesJson}></script>
-  <script type="application/json" id="actividades-data" set:html={actividadesJson}></script>
-  
+  <!-- Pasar datos a window primero -->
+  <script define:vars={{ transacciones, actividades }}>
+    window.transaccionesData = transacciones;
+    window.actividadesData = actividades;
+  </script>
+
+  <!-- Importar y ejecutar scripts -->
   <script>
     import { initializeTransaccionesFilters } from '../../scripts/transacciones-filters.ts';
     
     function initFilters() {
       try {
-        const txEl = document.getElementById('transacciones-data');
-        const actEl = document.getElementById('actividades-data');
-        const transacciones = JSON.parse(txEl?.textContent || '[]');
-        const actividades = JSON.parse(actEl?.textContent || '[]');
-        console.log('Script cargado en transacciones.astro', { transacciones: transacciones.length, actividades: actividades.length });
-        initializeTransaccionesFilters(transacciones, actividades);
+        console.log('Script cargado en transacciones.astro', { 
+          transacciones: window.transaccionesData?.length || 0, 
+          actividades: window.actividadesData?.length || 0 
+        });
+        initializeTransaccionesFilters(window.transaccionesData || [], window.actividadesData || []);
       } catch (error) {
         console.error('Error cargando datos o inicializando filtros:', error);
       }

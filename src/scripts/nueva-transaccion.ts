@@ -3,20 +3,34 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 export function initializeNuevaTransaccionForm() {
+  console.log('🚀 Iniciando initializeNuevaTransaccionForm');
+  
   const form = document.getElementById('transaccion-form') as HTMLFormElement;
-    const tipoSelect = document.getElementById('tipo') as HTMLSelectElement;
-    const categoriaSelect = document.getElementById('categoria_id') as HTMLSelectElement;
-    const actividadSelect = document.getElementById('actividad_id') as HTMLSelectElement;
-    const personaBuscar = document.getElementById('persona_buscar') as HTMLInputElement;
-    const personaId = document.getElementById('persona_id') as HTMLInputElement;
-    const resultadosDiv = document.getElementById('persona_resultados') as HTMLDivElement;
-    const montoInput = document.getElementById('monto') as HTMLInputElement;
-    const montoPreview = document.getElementById('monto-preview') as HTMLDivElement;
-    
-    if (!form || !tipoSelect || !categoriaSelect || !actividadSelect || !personaBuscar || !personaId || !resultadosDiv) {
-      console.error('No se encontraron todos los elementos necesarios');
-      return;
-    }
+  const tipoSelect = document.getElementById('tipo') as HTMLSelectElement;
+  const categoriaSelect = document.getElementById('categoria_id') as HTMLSelectElement;
+  const actividadSelect = document.getElementById('actividad_id') as HTMLSelectElement;
+  const personaBuscar = document.getElementById('persona_buscar') as HTMLInputElement;
+  const personaId = document.getElementById('persona_id') as HTMLInputElement;
+  const resultadosDiv = document.getElementById('persona_resultados') as HTMLDivElement;
+  const montoInput = document.getElementById('monto') as HTMLInputElement;
+  const montoPreview = document.getElementById('monto-preview') as HTMLDivElement;
+  
+  console.log('📋 Elementos encontrados:', {
+    form: !!form,
+    tipoSelect: !!tipoSelect,
+    categoriaSelect: !!categoriaSelect,
+    actividadSelect: !!actividadSelect,
+    personaBuscar: !!personaBuscar,
+    personaId: !!personaId,
+    resultadosDiv: !!resultadosDiv
+  });
+  
+  if (!form || !tipoSelect || !categoriaSelect || !actividadSelect || !personaBuscar || !personaId || !resultadosDiv) {
+    console.error('❌ No se encontraron todos los elementos necesarios');
+    return;
+  }
+  
+  console.log('✅ Todos los elementos encontrados, continuando...');
 
     // Función para formatear moneda
     function formatCurrency(amount: number): string {
@@ -304,24 +318,37 @@ export function initializeNuevaTransaccionForm() {
       const tipo = tipoSelect.value;
       const categorias = Array.from(categoriaSelect.options);
       
+      console.log('🔍 Filtrando categorías para tipo:', tipo);
+      console.log('📦 Total de opciones de categoría:', categorias.length);
+      
+      let visibles = 0;
+      let ocultas = 0;
+      
       // Mostrar/ocultar opciones según el tipo
       categorias.forEach(option => {
         if (option.value === '') return; // No ocultar la opción por defecto
         
         const categoriaTipo = option.getAttribute('data-tipo');
+        console.log(`  - Categoría: ${option.textContent}, tipo: ${categoriaTipo}`);
+        
         if (categoriaTipo === tipo || categoriaTipo === 'ambos') {
           option.style.display = '';
+          visibles++;
         } else {
           option.style.display = 'none';
+          ocultas++;
           // Si la opción seleccionada se oculta, seleccionar la opción por defecto
           if (option.selected) {
             categoriaSelect.value = '';
           }
         }
       });
+      
+      console.log(`✅ Filtrado completo: ${visibles} visibles, ${ocultas} ocultas`);
     }
     
     // Inicializar filtrado de categorías
+    console.log('🎬 Ejecutando filtrado inicial de categorías...');
     filtrarCategorias();
 
     // Escuchar cambios en el tipo de transacción

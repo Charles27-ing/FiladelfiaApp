@@ -343,14 +343,28 @@ const actividadIdParam = url.searchParams.get('actividad_id');
     </form>
   </div>
 
+  <!-- Pasar datos a window primero -->
+  <script define:vars={{ categorias, actividades }}>
+    window.categoriasData = categorias;
+    window.actividadesData = actividades;
+  </script>
+
+  <!-- Importar y ejecutar scripts -->
   <script>
     import { initializeNuevaTransaccionForm } from '../../scripts/nueva-transaccion.ts';
     
+    function initForm() {
+      console.log('Inicializando formulario de nueva transacción');
+      console.log('Categorías disponibles:', window.categoriasData?.length || 0);
+      console.log('Actividades disponibles:', window.actividadesData?.length || 0);
+      initializeNuevaTransaccionForm();
+    }
+    
     // Ejecutar cuando el DOM esté listo
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initializeNuevaTransaccionForm);
+      document.addEventListener('DOMContentLoaded', initForm);
     } else {
-      initializeNuevaTransaccionForm();
+      initForm();
     }
   </script>
 
