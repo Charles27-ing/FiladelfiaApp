@@ -31,30 +31,40 @@ let error: string | null = null;
 
 // Cargar categorías y actividades para los dropdowns
 try {
-  console.log('Solicitando categorías a:', `${baseUrl}/api/contabilidad/categorias`);
+  console.log('🔄 [SERVER] Cargando categorías y actividades...');
+  console.log('🌐 [SERVER] Base URL:', baseUrl);
+  console.log('📡 [SERVER] URL categorías:', `${baseUrl}/api/contabilidad/categorias`);
+  console.log('📡 [SERVER] URL actividades:', `${baseUrl}/api/contabilidad/actividades`);
+  
   const [categoriasRes, actividadesRes] = await Promise.all([
     fetch(`${baseUrl}/api/contabilidad/categorias`),
     fetch(`${baseUrl}/api/contabilidad/actividades`)
   ]);
   
+  console.log('📡 [SERVER] Respuesta categorías:', categoriasRes.status, categoriasRes.ok);
+  console.log('📡 [SERVER] Respuesta actividades:', actividadesRes.status, actividadesRes.ok);
+  
   if (categoriasRes.ok) {
     const categoriasData = await categoriasRes.json();
-    //console.log('Respuesta de categorías:', categoriasData);
+    console.log('✅ [SERVER] Categorías recibidas:', categoriasData.length);
+    console.log('📦 [SERVER] Primera categoría:', categoriasData[0]);
     categorias = categoriasData;
   } else {
     const errorText = await categoriasRes.text();
-    console.error('Error cargando categorías:', errorText);
+    console.error('❌ [SERVER] Error cargando categorías:', errorText);
     error = 'No se pudieron cargar las categorías';
   }
   
   if (actividadesRes.ok) {
     actividades = await actividadesRes.json();
+    console.log('✅ [SERVER] Actividades recibidas:', actividades.length);
   } else {
-    console.error('Error cargando actividades:', await actividadesRes.text());
+    const errorText = await actividadesRes.text();
+    console.error('❌ [SERVER] Error cargando actividades:', errorText);
   }
 } catch (err) {
   const errorObj = err as Error;
-  console.error('Error en la carga de datos:', errorObj);
+  console.error('❌ [SERVER] Error en la carga de datos:', errorObj);
   error = 'Error al cargar los datos necesarios';
 }
 
@@ -345,8 +355,16 @@ const actividadIdParam = url.searchParams.get('actividad_id');
 
   <!-- Pasar datos a window primero -->
   <script define:vars={{ categorias, actividades }}>
+    console.log('📥 [CLIENT] Recibiendo datos en define:vars...');
+    console.log('📊 [CLIENT] Categorías:', categorias?.length || 0);
+    console.log('📊 [CLIENT] Actividades:', actividades?.length || 0);
+    console.log('🔍 [CLIENT] Tipo de categorías:', typeof categorias, Array.isArray(categorias));
+    console.log('🔍 [CLIENT] Tipo de actividades:', typeof actividades, Array.isArray(actividades));
+    
     window.categoriasData = categorias;
     window.actividadesData = actividades;
+    
+    console.log('✅ [CLIENT] Datos asignados a window');
   </script>
 
   <!-- Importar y ejecutar scripts -->

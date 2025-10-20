@@ -31,28 +31,37 @@ let actividades: Actividad[] = [];
 let error: string | null = null;
 
 try {
+  console.log('🔄 [SERVER] Cargando datos desde APIs...');
+  console.log('🌐 [SERVER] Base URL:', baseUrl);
+  
   const [transaccionesRes, actividadesRes] = await Promise.all([
     fetch(`${baseUrl}/api/contabilidad/transacciones`),
     fetch(`${baseUrl}/api/contabilidad/actividades`)
   ]);
 
+  console.log('📡 [SERVER] Respuesta transacciones:', transaccionesRes.status, transaccionesRes.ok);
+  console.log('📡 [SERVER] Respuesta actividades:', actividadesRes.status, actividadesRes.ok);
+
   if (transaccionesRes.ok) {
     transacciones = await transaccionesRes.json();
-    console.log('Transacciones recibidas en Astro:', transacciones.length);
+    console.log('✅ [SERVER] Transacciones recibidas:', transacciones.length);
+    console.log('📦 [SERVER] Primera transacción:', transacciones[0]);
   } else {
     error = 'No se pudieron cargar las transacciones';
-    console.error('Error cargando transacciones:', await transaccionesRes.text());
+    const errorText = await transaccionesRes.text();
+    console.error('❌ [SERVER] Error cargando transacciones:', errorText);
   }
 
   if (actividadesRes.ok) {
     actividades = await actividadesRes.json();
-    console.log('Actividades recibidas en Astro:', actividades.length);
+    console.log('✅ [SERVER] Actividades recibidas:', actividades.length);
   } else {
-    console.error('Error cargando actividades:', await actividadesRes.text());
+    const errorText = await actividadesRes.text();
+    console.error('❌ [SERVER] Error cargando actividades:', errorText);
   }
 } catch (err) {
   error = 'Error al cargar los datos';
-  console.error('Error en carga:', err);
+  console.error('❌ [SERVER] Error en carga:', err);
 }
 
 // Obtener mensajes de URL
@@ -293,8 +302,16 @@ const actividadesJson = JSON.stringify(actividades).replace(/</g, '\\u003c');
 
   <!-- Pasar datos a window primero -->
   <script define:vars={{ transacciones, actividades }}>
+    console.log('📥 [CLIENT] Recibiendo datos en define:vars...');
+    console.log('📊 [CLIENT] Transacciones:', transacciones?.length || 0);
+    console.log('📊 [CLIENT] Actividades:', actividades?.length || 0);
+    console.log('🔍 [CLIENT] Tipo de transacciones:', typeof transacciones, Array.isArray(transacciones));
+    console.log('🔍 [CLIENT] Tipo de actividades:', typeof actividades, Array.isArray(actividades));
+    
     window.transaccionesData = transacciones;
     window.actividadesData = actividades;
+    
+    console.log('✅ [CLIENT] Datos asignados a window');
   </script>
 
   <!-- Importar y ejecutar scripts -->
